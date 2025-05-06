@@ -40,7 +40,10 @@ const etapa2Schema = z.object({
 });
 
 // União dos esquemas para o formulário completo
-const formSchema = etapa1Schema.merge(etapa2Schema);
+const formSchema = z.object({
+  ...etapa1Schema.shape,
+  ...etapa2Schema.shape
+});
 
 // Tipo para os dados do formulário
 type FormValues = z.infer<typeof formSchema>;
@@ -120,8 +123,10 @@ const RegistroVeterinarioPage = () => {
       
       const { error: profileError } = await supabase
         .from('veterinarios')
-        .update({
+        .insert({
+          user_id: authData.user.id,
           nome_completo: values.nomeCompleto,
+          email: values.email,
           crm: values.crm,
           estado_crm: values.estadoCrm,
           especialidades: especialidadesArray,
@@ -133,8 +138,7 @@ const RegistroVeterinarioPage = () => {
           tipo_atendimento: values.tipoAtendimento,
           valor_minimo: values.valorMinimo ? parseFloat(values.valorMinimo) : 0,
           status_aprovacao: 'pendente'
-        })
-        .eq('user_id', authData.user.id);
+        });
       
       if (profileError) throw profileError;
       
@@ -149,8 +153,7 @@ const RegistroVeterinarioPage = () => {
     } catch (error: any) {
       console.error('Erro no registro:', error);
       toast("Erro no cadastro", {
-        description: error.message || 'Ocorreu um erro ao criar sua conta.',
-        variant: 'destructive'
+        description: error.message || 'Ocorreu um erro ao criar sua conta.'
       });
     } finally {
       setIsSubmitting(false);

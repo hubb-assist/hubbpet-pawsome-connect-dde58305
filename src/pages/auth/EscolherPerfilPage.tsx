@@ -24,8 +24,7 @@ const EscolherPerfilPage: React.FC = () => {
     } catch (error) {
       console.error("Erro ao navegar:", error);
       toast("Erro ao processar solicitação", {
-        description: "Ocorreu um erro inesperado. Tente novamente.",
-        variant: "destructive"
+        description: "Ocorreu um erro inesperado. Tente novamente."
       });
     } finally {
       setIsLoading(false);
