@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -353,7 +352,7 @@ const VeterinarioProfileForm = () => {
         latitude: profileData.latitude ? parseFloat(profileData.latitude) : null,
         longitude: profileData.longitude ? parseFloat(profileData.longitude) : null,
         valor_minimo: profileData.valor_minimo,
-        status_aprovacao: 'pendente',
+        status_aprovacao: 'pendente' as 'pendente', // Corrigindo o tipo explicitamente
         email: user?.email,
       };
 
@@ -385,7 +384,7 @@ const VeterinarioProfileForm = () => {
       toast({
         title: 'Erro',
         description: error.message || 'Não foi possível salvar seu perfil.',
-        variant: 'destructive'
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
