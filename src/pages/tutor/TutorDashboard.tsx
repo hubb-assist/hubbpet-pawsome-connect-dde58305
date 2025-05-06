@@ -19,8 +19,7 @@ const TutorDashboard = () => {
       navigate('/auth');
     } catch (error: any) {
       toast("Erro ao fazer logout", {
-        description: error.message || "Ocorreu um erro durante o logout.",
-        variant: "destructive"
+        description: error.message || "Ocorreu um erro durante o logout."
       });
     }
   };

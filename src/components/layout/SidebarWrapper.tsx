@@ -15,7 +15,7 @@ const SidebarWrapper = ({ children }: SidebarWrapperProps) => {
     setIsExpanded(!isExpanded);
   };
 
-  // O fundo do sidebar é escuro (hubbpet-primary), então usamos o logo claro
+  // O sidebar tem fundo escuro, então usamos o logo branco (claro)
   const logoUrl = "https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png";
   const iconUrl = "https://sq360.com.br/logo-hubb-novo/hubb_pet_icon.png";
 
