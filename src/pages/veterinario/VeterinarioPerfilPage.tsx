@@ -1,11 +1,13 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import VeterinarioProfileForm from '@/components/veterinario/VeterinarioProfileForm';
 
 const VeterinarioPerfilPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleProfileUpdate = async (data: any) => {
     try {
@@ -15,6 +17,9 @@ const VeterinarioPerfilPage = () => {
       toast("Perfil atualizado", {
         description: "Seus dados foram atualizados com sucesso."
       });
+      
+      // Redirecionar para a dashboard após o preenchimento do perfil
+      navigate('/vet');
       
     } catch (error: any) {
       console.error("Erro ao atualizar perfil:", error);

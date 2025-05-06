@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
@@ -8,15 +9,29 @@ import { toast } from "@/components/ui/sonner";
 const EscolherPerfilPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { setRole } = useAuth();
 
-  const handleSelectRole = (selectedRole: 'tutor' | 'veterinario') => {
+  const handleSelectRole = async (selectedRole: 'tutor' | 'veterinario') => {
     setIsLoading(true);
     
-    // Redirecionar para a página de cadastro com o papel selecionado
-    setTimeout(() => {
-      navigate(`/auth?role=${selectedRole}`);
+    try {
+      // Definir o papel do usuário no AuthContext
+      await setRole(selectedRole);
+      
+      // Redirecionar para a dashboard apropriada
+      if (selectedRole === 'veterinario') {
+        navigate('/vet/perfil');
+      } else {
+        navigate('/tutor');
+      }
+    } catch (error) {
+      console.error("Erro ao definir perfil:", error);
+      toast("Erro ao configurar perfil", {
+        description: "Ocorreu um erro ao configurar seu perfil. Tente novamente."
+      });
+    } finally {
       setIsLoading(false);
-    }, 300);
+    }
   };
 
   return (
