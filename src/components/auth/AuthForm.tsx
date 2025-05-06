@@ -30,6 +30,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UserRole } from "@/contexts/AuthContext";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "E-mail inválido" }),
@@ -41,7 +45,7 @@ const registerSchema = z.object({
   email: z.string().email({ message: "E-mail inválido" }),
   password: z.string().min(6, { message: "Senha deve ter pelo menos 6 caracteres" }),
   confirmPassword: z.string(),
-  role: z.enum(["tutor", "veterinary"]),
+  role: z.enum(["tutor", "veterinario"]),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -52,7 +56,10 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthForm() {
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { signIn, signUp } = useAuth();
   
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -73,31 +80,48 @@ export default function AuthForm() {
     },
   });
 
-  const onLoginSubmit = (data: LoginFormValues) => {
-    toast({
-      title: "Login requisitado",
-      description: "Aguarde enquanto autenticamos...",
-    });
-    // In a real app, we would call the Supabase auth service here
+  const onLoginSubmit = async (data: LoginFormValues) => {
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      await signIn(data.email, data.password);
+    } catch (error: any) {
+      setError(error.message || "Erro ao fazer login");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const onRegisterSubmit = (data: RegisterFormValues) => {
-    toast({
-      title: "Cadastro requisitado",
-      description: `Cadastrando como ${data.role === "tutor" ? "Tutor" : "Veterinário"}...`,
-    });
-    // In a real app, we would call the Supabase auth service here
+  const onRegisterSubmit = async (data: RegisterFormValues) => {
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      await signUp(data.email, data.password, data.name, data.role);
+      setAuthMode("login");
+      toast({
+        title: "Cadastro realizado com sucesso",
+        description: "Agora você pode fazer login com suas credenciais",
+      });
+      
+      registerForm.reset();
+    } catch (error: any) {
+      setError(error.message || "Erro ao fazer cadastro");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto border-[#2D113F]/20">
       <CardHeader>
         <div className="flex justify-center mb-6">
           <div className="logo-container">
             <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png" alt="HubbPet" />
           </div>
         </div>
-        <CardTitle className="text-2xl text-center text-hubbpet-primary">
+        <CardTitle className="text-2xl text-center text-[#2D113F]">
           {authMode === "login" ? "Login" : "Cadastro"}
         </CardTitle>
         <CardDescription className="text-center">
@@ -107,6 +131,13 @@ export default function AuthForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
         <Tabs value={authMode} onValueChange={(value) => setAuthMode(value as "login" | "register")}>
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="login">Login</TabsTrigger>
@@ -142,8 +173,12 @@ export default function AuthForm() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full bg-hubbpet-primary hover:bg-hubbpet-primary/80">
-                  Entrar
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#2D113F] hover:bg-[#2D113F]/80"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
             </Form>
@@ -218,15 +253,19 @@ export default function AuthForm() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="tutor">Tutor de Pet</SelectItem>
-                          <SelectItem value="veterinary">Profissional Veterinário</SelectItem>
+                          <SelectItem value="veterinario">Profissional Veterinário</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full bg-hubbpet-primary hover:bg-hubbpet-primary/80">
-                  Cadastrar
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#2D113F] hover:bg-[#2D113F]/80"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Cadastrando..." : "Cadastrar"}
                 </Button>
               </form>
             </Form>

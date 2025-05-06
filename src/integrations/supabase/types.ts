@@ -9,16 +9,316 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      agendamentos: {
+        Row: {
+          avaliacao_comentario: string | null
+          avaliacao_nota: number | null
+          created_at: string | null
+          data_hora: string
+          id: string
+          pet_id: string
+          servico_id: string
+          status: Database["public"]["Enums"]["agendamento_status"]
+          tutor_id: string
+          updated_at: string | null
+          valor_pago: number
+          veterinario_id: string
+        }
+        Insert: {
+          avaliacao_comentario?: string | null
+          avaliacao_nota?: number | null
+          created_at?: string | null
+          data_hora: string
+          id?: string
+          pet_id: string
+          servico_id: string
+          status?: Database["public"]["Enums"]["agendamento_status"]
+          tutor_id: string
+          updated_at?: string | null
+          valor_pago: number
+          veterinario_id: string
+        }
+        Update: {
+          avaliacao_comentario?: string | null
+          avaliacao_nota?: number | null
+          created_at?: string | null
+          data_hora?: string
+          id?: string
+          pet_id?: string
+          servico_id?: string
+          status?: Database["public"]["Enums"]["agendamento_status"]
+          tutor_id?: string
+          updated_at?: string | null
+          valor_pago?: number
+          veterinario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_veterinario_id_fkey"
+            columns: ["veterinario_id"]
+            isOneToOne: false
+            referencedRelation: "veterinarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pets: {
+        Row: {
+          created_at: string | null
+          data_nascimento: string | null
+          especie: string
+          id: string
+          nome: string
+          peso: number | null
+          raca: string | null
+          sexo: Database["public"]["Enums"]["pet_sexo"] | null
+          tutor_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_nascimento?: string | null
+          especie: string
+          id?: string
+          nome: string
+          peso?: number | null
+          raca?: string | null
+          sexo?: Database["public"]["Enums"]["pet_sexo"] | null
+          tutor_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_nascimento?: string | null
+          especie?: string
+          id?: string
+          nome?: string
+          peso?: number | null
+          raca?: string | null
+          sexo?: Database["public"]["Enums"]["pet_sexo"] | null
+          tutor_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pets_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      servicos: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          duracao_minutos: number
+          id: string
+          nome: string
+          preco: number
+          updated_at: string | null
+          veterinario_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          duracao_minutos: number
+          id?: string
+          nome: string
+          preco: number
+          updated_at?: string | null
+          veterinario_id: string
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          duracao_minutos?: number
+          id?: string
+          nome?: string
+          preco?: number
+          updated_at?: string | null
+          veterinario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servicos_veterinario_id_fkey"
+            columns: ["veterinario_id"]
+            isOneToOne: false
+            referencedRelation: "veterinarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutores: {
+        Row: {
+          cep: string | null
+          cidade: string | null
+          created_at: string | null
+          email: string
+          estado: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cep?: string | null
+          cidade?: string | null
+          created_at?: string | null
+          email: string
+          estado?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cep?: string | null
+          cidade?: string | null
+          created_at?: string | null
+          email?: string
+          estado?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      veterinarios: {
+        Row: {
+          bio: string | null
+          cep: string | null
+          cidade: string | null
+          created_at: string | null
+          crm: string
+          email: string
+          especialidades: string[] | null
+          estado: string | null
+          estado_crm: string
+          foto_perfil: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          nome_completo: string
+          status_aprovacao: Database["public"]["Enums"]["aprovacao_status"]
+          telefone: string | null
+          tipo_atendimento: Database["public"]["Enums"]["atendimento_tipo"]
+          updated_at: string | null
+          user_id: string | null
+          valor_minimo: number | null
+        }
+        Insert: {
+          bio?: string | null
+          cep?: string | null
+          cidade?: string | null
+          created_at?: string | null
+          crm: string
+          email: string
+          especialidades?: string[] | null
+          estado?: string | null
+          estado_crm: string
+          foto_perfil?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nome_completo: string
+          status_aprovacao?: Database["public"]["Enums"]["aprovacao_status"]
+          telefone?: string | null
+          tipo_atendimento?: Database["public"]["Enums"]["atendimento_tipo"]
+          updated_at?: string | null
+          user_id?: string | null
+          valor_minimo?: number | null
+        }
+        Update: {
+          bio?: string | null
+          cep?: string | null
+          cidade?: string | null
+          created_at?: string | null
+          crm?: string
+          email?: string
+          especialidades?: string[] | null
+          estado?: string | null
+          estado_crm?: string
+          foto_perfil?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nome_completo?: string
+          status_aprovacao?: Database["public"]["Enums"]["aprovacao_status"]
+          telefone?: string | null
+          tipo_atendimento?: Database["public"]["Enums"]["atendimento_tipo"]
+          updated_at?: string | null
+          user_id?: string | null
+          valor_minimo?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: string
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      agendamento_status: "pendente" | "confirmado" | "realizado" | "cancelado"
+      aprovacao_status: "pendente" | "aprovado" | "rejeitado"
+      atendimento_tipo: "domicilio" | "clinica" | "ambos"
+      pet_sexo: "macho" | "femea"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +433,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      agendamento_status: ["pendente", "confirmado", "realizado", "cancelado"],
+      aprovacao_status: ["pendente", "aprovado", "rejeitado"],
+      atendimento_tipo: ["domicilio", "clinica", "ambos"],
+      pet_sexo: ["macho", "femea"],
+    },
   },
 } as const
