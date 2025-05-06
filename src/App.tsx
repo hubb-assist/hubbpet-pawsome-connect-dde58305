@@ -15,6 +15,7 @@ import VeterinarioDashboard from "./pages/veterinario/VeterinarioDashboard";
 import VeterinarioPerfilPage from "./pages/veterinario/VeterinarioPerfilPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import EscolherPerfilPage from "./pages/auth/EscolherPerfilPage";
+import RegistroVeterinarioPage from "./pages/auth/RegistroVeterinarioPage";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -40,6 +41,7 @@ const App = () => {
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/escolher-perfil" element={<EscolherPerfilPage />} />
+              <Route path="/registro-veterinario" element={<RegistroVeterinarioPage />} />
               
               {/* Rotas de tutor */}
               <Route path="/tutor" element={

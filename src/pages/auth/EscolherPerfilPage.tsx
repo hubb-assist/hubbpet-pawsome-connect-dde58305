@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
@@ -9,25 +8,24 @@ import { toast } from "@/components/ui/sonner";
 const EscolherPerfilPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { setRole } = useAuth();
 
-  const handleSelectRole = async (selectedRole: 'tutor' | 'veterinario') => {
+  const handleSelectRole = (selectedRole: 'tutor' | 'veterinario') => {
     setIsLoading(true);
     
     try {
-      // Definir o papel do usuário no AuthContext
-      await setRole(selectedRole);
-      
-      // Redirecionar para a dashboard apropriada
+      // Redirecionar para a página apropriada com base no papel selecionado
       if (selectedRole === 'veterinario') {
-        navigate('/vet/perfil');
+        // Para veterinários, redirecionar para o fluxo de registro específico
+        navigate('/registro-veterinario');
       } else {
-        navigate('/tutor');
+        // Para tutores, redirecionar para o fluxo padrão de autenticação
+        navigate('/auth?role=tutor');
       }
     } catch (error) {
-      console.error("Erro ao definir perfil:", error);
-      toast("Erro ao configurar perfil", {
-        description: "Ocorreu um erro ao configurar seu perfil. Tente novamente."
+      console.error("Erro ao navegar:", error);
+      toast("Erro ao processar solicitação", {
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
