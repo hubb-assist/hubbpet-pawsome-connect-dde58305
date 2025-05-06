@@ -16,7 +16,6 @@ const VeterinarioPerfilPage: React.FC = () => {
     if (!isLoading) {
       if (!user) {
         toast({
-          title: "Sessão expirada",
           description: "Sua sessão expirou. Por favor, faça login novamente.",
           variant: "destructive"
         });
@@ -31,13 +30,11 @@ const VeterinarioPerfilPage: React.FC = () => {
     try {
       await signOut();
       toast({
-        title: "Logout realizado",
         description: "Você foi desconectado com sucesso."
       });
       navigate('/auth');
     } catch (error: any) {
       toast({
-        title: "Erro ao fazer logout",
         description: error.message || "Ocorreu um erro durante o logout.",
         variant: "destructive"
       });

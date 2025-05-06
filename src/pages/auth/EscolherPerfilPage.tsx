@@ -1,17 +1,22 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/contexts/AuthContext';
+import { toast } from "@/components/ui/sonner";
 
 const EscolherPerfilPage: React.FC = () => {
-  const { setRole, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSelectRole = (selectedRole: UserRole) => {
-    if (selectedRole) {
-      setRole(selectedRole);
-    }
+  const handleSelectRole = (selectedRole: 'tutor' | 'veterinario') => {
+    setIsLoading(true);
+    
+    // Redirecionar para a página de cadastro com o papel selecionado
+    setTimeout(() => {
+      navigate(`/auth?role=${selectedRole}`);
+      setIsLoading(false);
+    }, 300);
   };
 
   return (
@@ -63,7 +68,7 @@ const EscolherPerfilPage: React.FC = () => {
                     <Button className="w-full bg-[#2D113F] hover:bg-[#2D113F]/80" 
                       onClick={() => handleSelectRole('tutor')}
                       disabled={isLoading}>
-                      {isLoading ? "Processando..." : "Selecionar como Tutor"}
+                      {isLoading ? "Processando..." : "Cadastrar como Tutor"}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -92,7 +97,7 @@ const EscolherPerfilPage: React.FC = () => {
                     <Button className="w-full bg-[#C52339] hover:bg-[#C52339]/80" 
                       onClick={() => handleSelectRole('veterinario')}
                       disabled={isLoading}>
-                      {isLoading ? "Processando..." : "Selecionar como Veterinário"}
+                      {isLoading ? "Processando..." : "Cadastrar como Veterinário"}
                     </Button>
                   </CardFooter>
                 </Card>

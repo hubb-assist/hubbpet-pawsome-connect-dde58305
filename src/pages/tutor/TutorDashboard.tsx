@@ -1,24 +1,24 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
-import { toast } from '@/components/ui/sonner';
 
-const TutorDashboard: React.FC = () => {
-  const { user, signOut } = useAuth();
+const TutorDashboard = () => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       await signOut();
       toast({
-        title: "Logout realizado",
         description: "Você foi desconectado com sucesso."
       });
+      navigate('/auth');
     } catch (error: any) {
       toast({
-        title: "Erro ao fazer logout",
         description: error.message || "Ocorreu um erro durante o logout.",
         variant: "destructive"
       });
@@ -26,9 +26,9 @@ const TutorDashboard: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Bem-vindo, Tutor!</h1>
+        <h1 className="text-2xl font-bold">Dashboard do Tutor</h1>
         <Button 
           variant="outline" 
           className="flex items-center gap-2" 
@@ -39,45 +39,21 @@ const TutorDashboard: React.FC = () => {
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Meus Pets</CardTitle>
-            <CardDescription>Gerencie seus animais de estimação</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Você ainda não cadastrou nenhum pet.</p>
-            <button className="mt-4 px-4 py-2 bg-[#DD6B20] text-white rounded-md hover:bg-[#DD6B20]/80">
-              Adicionar Pet
-            </button>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-2">Meus Pets</h2>
+          <p className="text-gray-500">Nenhum pet cadastrado ainda.</p>
+        </div>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Agendamentos</CardTitle>
-            <CardDescription>Suas consultas veterinárias</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Nenhum agendamento encontrado.</p>
-            <button className="mt-4 px-4 py-2 bg-[#2D113F] text-white rounded-md hover:bg-[#2D113F]/80">
-              Buscar Veterinários
-            </button>
-          </CardContent>
-        </Card>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-2">Próximas Consultas</h2>
+          <p className="text-gray-500">Nenhuma consulta agendada.</p>
+        </div>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Veterinários Próximos</CardTitle>
-            <CardDescription>Encontre profissionais por perto</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Encontre veterinários por localização, especialidade ou tipo de atendimento.</p>
-            <button className="mt-4 px-4 py-2 bg-[#C52339] text-white rounded-md hover:bg-[#C52339]/80">
-              Pesquisar
-            </button>
-          </CardContent>
-        </Card>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-2">Veterinários Próximos</h2>
+          <p className="text-gray-500">Busca de veterinários em breve.</p>
+        </div>
       </div>
     </div>
   );

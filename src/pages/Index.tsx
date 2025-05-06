@@ -30,10 +30,10 @@ const Index = () => {
               navigate('/tutor');
               break;
             default:
-              navigate('/escolher-perfil');
+              // Não redireciona para escolher perfil se já autenticado
+              // mas sem perfil definido
+              console.log('Usuário autenticado mas sem perfil definido');
           }
-        } else {
-          navigate('/escolher-perfil');
         }
       }
     };
