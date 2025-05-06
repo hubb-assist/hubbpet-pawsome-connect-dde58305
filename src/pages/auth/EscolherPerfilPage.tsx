@@ -34,7 +34,8 @@ const EscolherPerfilPage: React.FC = () => {
             <CardHeader className="text-center">
               <div className="flex justify-center mb-6">
                 <div className="logo-container">
-                  <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png" alt="HubbPet" />
+                  {/* Usando o logo escuro em fundo claro */}
+                  <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo_ESCURO.png" alt="HubbPet" />
                 </div>
               </div>
               <CardTitle className="text-2xl text-[#2D113F]">Escolha seu perfil</CardTitle>

@@ -13,12 +13,12 @@ const TutorDashboard = () => {
   const handleLogout = async () => {
     try {
       await signOut();
-      toast({
+      toast("Logout realizado", {
         description: "Você foi desconectado com sucesso."
       });
       navigate('/auth');
     } catch (error: any) {
-      toast({
+      toast("Erro ao fazer logout", {
         description: error.message || "Ocorreu um erro durante o logout.",
         variant: "destructive"
       });

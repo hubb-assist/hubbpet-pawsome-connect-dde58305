@@ -15,6 +15,10 @@ const SidebarWrapper = ({ children }: SidebarWrapperProps) => {
     setIsExpanded(!isExpanded);
   };
 
+  // O fundo do sidebar é escuro (hubbpet-primary), então usamos o logo claro
+  const logoUrl = "https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png";
+  const iconUrl = "https://sq360.com.br/logo-hubb-novo/hubb_pet_icon.png";
+
   return (
     <div className={cn(
       "min-h-screen bg-hubbpet-primary text-white transition-all duration-300",
@@ -24,11 +28,11 @@ const SidebarWrapper = ({ children }: SidebarWrapperProps) => {
         <div className={cn("flex items-center justify-center w-full", !isExpanded && "justify-center")}>
           {isExpanded ? (
             <div className="logo-container">
-              <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png" alt="HubbPet" />
+              <img src={logoUrl} alt="HubbPet" />
             </div>
           ) : (
             <div className="icon-container">
-              <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_icon.png" alt="HubbPet Icon" />
+              <img src={iconUrl} alt="HubbPet Icon" />
             </div>
           )}
         </div>
