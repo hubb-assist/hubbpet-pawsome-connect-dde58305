@@ -41,8 +41,23 @@ const etapa2Schema = z.object({
 
 // União dos esquemas para o formulário completo
 const formSchema = z.object({
-  ...etapa1Schema.shape,
-  ...etapa2Schema.shape
+  email: z.string().email({ message: 'E-mail inválido' }),
+  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres' }),
+  confirmPassword: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres' }),
+  nomeCompleto: z.string().min(3, { message: 'Nome completo é obrigatório' }),
+  crm: z.string().min(1, { message: 'CRM é obrigatório' }),
+  estadoCrm: z.string().min(2, { message: 'Estado do CRM é obrigatório' }),
+  especialidades: z.string().optional(),
+  bio: z.string().optional(),
+  telefone: z.string().optional(),
+  cep: z.string().min(8, { message: 'CEP é obrigatório' }),
+  cidade: z.string().min(1, { message: 'Cidade é obrigatória' }),
+  estado: z.string().min(2, { message: 'Estado é obrigatório' }),
+  tipoAtendimento: z.enum(['clinica', 'domicilio', 'ambos']),
+  valorMinimo: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
 });
 
 // Tipo para os dados do formulário
@@ -79,12 +94,25 @@ const RegistroVeterinarioPage = () => {
   
   // Função para avançar para a próxima etapa
   const handleNext = async () => {
-    const isValid = await form.trigger(
-      Object.keys(currentStep === 1 ? etapa1Schema.shape : {}) as any
-    );
-    
-    if (isValid) {
-      setCurrentStep(currentStep + 1);
+    if (currentStep === 1) {
+      // Validar apenas os campos da primeira etapa
+      const result = await form.trigger([
+        'email', 'password', 'confirmPassword', 'nomeCompleto', 
+        'crm', 'estadoCrm', 'especialidades', 'bio', 'telefone'
+      ]);
+      
+      if (result) {
+        setCurrentStep(currentStep + 1);
+      }
+    } else if (currentStep === 2) {
+      // Validar apenas os campos da segunda etapa
+      const result = await form.trigger([
+        'cep', 'cidade', 'estado', 'tipoAtendimento', 'valorMinimo'
+      ]);
+      
+      if (result) {
+        setCurrentStep(currentStep + 1);
+      }
     }
   };
   
