@@ -22,7 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -32,8 +32,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { UserRole } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "E-mail inválido" }),
@@ -58,6 +59,9 @@ export default function AuthForm() {
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [emailForResend, setEmailForResend] = useState<string>("");
+  const [isResending, setIsResending] = useState(false);
   const { toast } = useToast();
   const { signIn, signUp } = useAuth();
   
@@ -83,11 +87,18 @@ export default function AuthForm() {
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     setError(null);
+    setNeedsEmailConfirmation(false);
     
     try {
       await signIn(data.email, data.password);
     } catch (error: any) {
-      setError(error.message || "Erro ao fazer login");
+      if (error.message.includes("Email not confirmed") || error.message.includes("confirmation")) {
+        setNeedsEmailConfirmation(true);
+        setEmailForResend(data.email);
+        setError("É necessário confirmar seu e-mail antes de fazer login. Verifique sua caixa de entrada.");
+      } else {
+        setError(error.message || "Erro ao fazer login");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -100,9 +111,11 @@ export default function AuthForm() {
     try {
       await signUp(data.email, data.password, data.name, data.role);
       setAuthMode("login");
+      setNeedsEmailConfirmation(true);
+      setEmailForResend(data.email);
       toast({
         title: "Cadastro realizado com sucesso",
-        description: "Agora você pode fazer login com suas credenciais",
+        description: "Enviamos um e-mail de confirmação. Por favor, verifique sua caixa de entrada para ativar sua conta.",
       });
       
       registerForm.reset();
@@ -110,6 +123,34 @@ export default function AuthForm() {
       setError(error.message || "Erro ao fazer cadastro");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!emailForResend) return;
+    
+    setIsResending(true);
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: emailForResend,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "E-mail enviado",
+        description: "Um novo e-mail de confirmação foi enviado. Por favor, verifique sua caixa de entrada.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar e-mail",
+        description: error.message || "Ocorreu um erro ao enviar o e-mail de confirmação.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -135,6 +176,26 @@ export default function AuthForm() {
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {needsEmailConfirmation && (
+          <Alert variant="warning" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Confirmação de E-mail Necessária</AlertTitle>
+            <AlertDescription className="mt-2">
+              Você precisa confirmar seu e-mail antes de fazer login. Verifique sua caixa de entrada (e pasta de spam).
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleResendConfirmation}
+                  disabled={isResending}
+                >
+                  {isResending ? "Enviando..." : "Reenviar e-mail de confirmação"}
+                </Button>
+              </div>
+            </AlertDescription>
           </Alert>
         )}
         
