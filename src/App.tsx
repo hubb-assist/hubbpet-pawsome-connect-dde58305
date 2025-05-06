@@ -12,6 +12,7 @@ import AuthPage from "./pages/auth/AuthPage";
 import NotFound from "./pages/NotFound";
 import TutorDashboard from "./pages/tutor/TutorDashboard";
 import VeterinarioDashboard from "./pages/veterinario/VeterinarioDashboard";
+import VeterinarioPerfilPage from "./pages/veterinario/VeterinarioPerfilPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import EscolherPerfilPage from "./pages/auth/EscolherPerfilPage";
 import AppLayout from "./components/layout/AppLayout";
@@ -57,6 +58,7 @@ const App = () => {
                 </ProtectedRoute>
               }>
                 <Route index element={<VeterinarioDashboard />} />
+                <Route path="perfil" element={<VeterinarioPerfilPage />} />
                 {/* Adicione outras rotas de veterinário aqui */}
               </Route>
               
