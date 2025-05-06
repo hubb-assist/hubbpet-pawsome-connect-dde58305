@@ -233,6 +233,7 @@ export type Database = {
       }
       veterinarios: {
         Row: {
+          bairro: string | null
           bio: string | null
           cep: string | null
           cidade: string | null
@@ -249,7 +250,9 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           nome_completo: string
+          numero: string | null
           rg: string | null
+          rua: string | null
           status_aprovacao: Database["public"]["Enums"]["aprovacao_status"]
           telefone: string | null
           tipo_atendimento: Database["public"]["Enums"]["atendimento_tipo"]
@@ -258,6 +261,7 @@ export type Database = {
           valor_minimo: number | null
         }
         Insert: {
+          bairro?: string | null
           bio?: string | null
           cep?: string | null
           cidade?: string | null
@@ -274,7 +278,9 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           nome_completo: string
+          numero?: string | null
           rg?: string | null
+          rua?: string | null
           status_aprovacao?: Database["public"]["Enums"]["aprovacao_status"]
           telefone?: string | null
           tipo_atendimento?: Database["public"]["Enums"]["atendimento_tipo"]
@@ -283,6 +289,7 @@ export type Database = {
           valor_minimo?: number | null
         }
         Update: {
+          bairro?: string | null
           bio?: string | null
           cep?: string | null
           cidade?: string | null
@@ -299,7 +306,9 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           nome_completo?: string
+          numero?: string | null
           rg?: string | null
+          rua?: string | null
           status_aprovacao?: Database["public"]["Enums"]["aprovacao_status"]
           telefone?: string | null
           tipo_atendimento?: Database["public"]["Enums"]["atendimento_tipo"]

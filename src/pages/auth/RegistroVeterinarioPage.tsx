@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { CheckIcon, ArrowRight, ArrowLeft, FileUp, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -63,7 +62,6 @@ const etapa1Schema = z.object({
     .refine((cpf) => validarCPF(cpf), { message: 'CPF inválido' }),
   rg: z.string().optional(),
   especialidades: z.string().optional(),
-  bio: z.string().optional(),
   telefone: z.string()
     .min(10, { message: 'Telefone é obrigatório' })
     .refine((tel) => /^\(\d{2}\) \d{5}-\d{4}$/.test(tel) || /^\d{10,11}$/.test(tel), {
@@ -90,10 +88,12 @@ const etapa1Schema = z.object({
 // Esquema para a segunda etapa (endereço e localização)
 const etapa2Schema = z.object({
   cep: z.string().min(8, { message: 'CEP é obrigatório' }),
+  rua: z.string().min(1, { message: 'Rua é obrigatória' }),
+  bairro: z.string().min(1, { message: 'Bairro é obrigatório' }),
+  numero: z.string().min(1, { message: 'Número é obrigatório' }),
   cidade: z.string().min(1, { message: 'Cidade é obrigatória' }),
   estado: z.string().min(2, { message: 'Estado é obrigatório' }),
   tipoAtendimento: z.enum(['clinica', 'domicilio', 'ambos']),
-  valorMinimo: z.string().optional(),
 });
 
 // União dos esquemas para o formulário completo
@@ -109,7 +109,6 @@ const formSchema = z.object({
     .refine((cpf) => validarCPF(cpf), { message: 'CPF inválido' }),
   rg: z.string().optional(),
   especialidades: z.string().optional(),
-  bio: z.string().optional(),
   telefone: z.string()
     .min(10, { message: 'Telefone é obrigatório' })
     .refine((tel) => /^\(\d{2}\) \d{5}-\d{4}$/.test(tel) || /^\d{10,11}$/.test(tel), {
@@ -120,10 +119,12 @@ const formSchema = z.object({
     .optional()
     .or(z.literal('')),
   cep: z.string().min(8, { message: 'CEP é obrigatório' }),
+  rua: z.string().min(1, { message: 'Rua é obrigatória' }),
+  bairro: z.string().min(1, { message: 'Bairro é obrigatório' }),
+  numero: z.string().min(1, { message: 'Número é obrigatório' }),
   cidade: z.string().min(1, { message: 'Cidade é obrigatória' }),
   estado: z.string().min(2, { message: 'Estado é obrigatório' }),
   tipoAtendimento: z.enum(['clinica', 'domicilio', 'ambos']),
-  valorMinimo: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -155,13 +156,14 @@ const RegistroVeterinarioPage = () => {
       cpf: '',
       rg: '',
       especialidades: '',
-      bio: '',
       telefone: '',
       cep: '',
+      rua: '',
+      bairro: '',
+      numero: '',
       cidade: '',
       estado: '',
       tipoAtendimento: 'clinica',
-      valorMinimo: '0',
     },
     mode: 'onChange'
   });
@@ -212,18 +214,20 @@ const RegistroVeterinarioPage = () => {
       const data = await response.json();
       
       if (!data.erro) {
+        form.setValue('rua', data.logradouro, { shouldValidate: true });
+        form.setValue('bairro', data.bairro, { shouldValidate: true });
         form.setValue('cidade', data.localidade, { shouldValidate: true });
         form.setValue('estado', data.uf, { shouldValidate: true });
+        // O número precisa ser preenchido manualmente
       } else {
         toast("CEP não encontrado", {
-          description: "Verifique o CEP informado ou preencha os campos manualmente.",
+          description: "Verifique o CEP informado ou preencha os campos manualmente."
         });
       }
     } catch (error) {
       console.error('Erro ao buscar CEP:', error);
       toast("Erro ao buscar CEP", {
-        description: "Não foi possível consultar o CEP. Preencha os campos manualmente.",
-        variant: "destructive"
+        description: "Não foi possível consultar o CEP. Preencha os campos manualmente."
       });
     } finally {
       setBuscandoCep(false);
@@ -236,7 +240,7 @@ const RegistroVeterinarioPage = () => {
       // Validar apenas os campos da primeira etapa
       const result = await form.trigger([
         'email', 'password', 'confirmPassword', 'nomeCompleto', 
-        'crm', 'estadoCrm', 'cpf', 'rg', 'especialidades', 'bio', 'telefone'
+        'crm', 'estadoCrm', 'cpf', 'rg', 'especialidades', 'telefone'
       ], { shouldFocus: true });
       
       if (result) {
@@ -245,7 +249,7 @@ const RegistroVeterinarioPage = () => {
     } else if (currentStep === 2) {
       // Validar apenas os campos da segunda etapa
       const result = await form.trigger([
-        'cep', 'cidade', 'estado', 'tipoAtendimento', 'valorMinimo'
+        'cep', 'rua', 'bairro', 'numero', 'cidade', 'estado', 'tipoAtendimento'
       ], { shouldFocus: true });
       
       if (result) {
@@ -260,22 +264,24 @@ const RegistroVeterinarioPage = () => {
   };
 
   // Função para fazer upload do documento CRMV
-  const uploadCRMVDocument = async (file: File) => {
+  const uploadCRMVDocument = async (file: File, userId: string) => {
     if (!file) return null;
     
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `crmvs/${fileName}`;
+      const filePath = `${userId}/${fileName}`;
+      
+      // Criar referência para progresso do upload
+      const progressHandler = (progress: { loaded: number, total: number }) => {
+        setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
+      };
       
       const { error: uploadError, data } = await supabase.storage
         .from('crmvs')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
-          },
+          upsert: false
         });
       
       if (uploadError) throw uploadError;
@@ -295,18 +301,6 @@ const RegistroVeterinarioPage = () => {
     setIsSubmitting(true);
     
     try {
-      let crmv_document_url = null;
-      
-      // Upload do CRMV document (se existir)
-      if (crmvFile) {
-        crmv_document_url = await uploadCRMVDocument(crmvFile);
-      }
-      
-      // Remover máscaras dos campos antes de enviar
-      const cpfSemMascara = values.cpf.replace(/\D/g, '');
-      const telefoneSemMascara = values.telefone.replace(/\D/g, '');
-      const cepSemMascara = values.cep.replace(/\D/g, '');
-      
       // 1. Criação da conta no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
@@ -325,6 +319,18 @@ const RegistroVeterinarioPage = () => {
         throw new Error('Erro ao criar conta de usuário');
       }
       
+      let crmv_document_url = null;
+      
+      // Upload do CRMV document (se existir)
+      if (crmvFile) {
+        crmv_document_url = await uploadCRMVDocument(crmvFile, authData.user.id);
+      }
+      
+      // Remover máscaras dos campos antes de enviar
+      const cpfSemMascara = values.cpf.replace(/\D/g, '');
+      const telefoneSemMascara = values.telefone.replace(/\D/g, '');
+      const cepSemMascara = values.cep.replace(/\D/g, '');
+      
       // 2. Criação do registro na tabela veterinarios
       const especialidadesArray = values.especialidades
         ? values.especialidades.split(',').map(esp => esp.trim())
@@ -341,13 +347,14 @@ const RegistroVeterinarioPage = () => {
           cpf: values.cpf, // Mantemos a máscara para exibição
           rg: values.rg, // Mantemos a máscara para exibição
           especialidades: especialidadesArray,
-          bio: values.bio || null,
           telefone: telefoneSemMascara,
           cep: cepSemMascara,
+          rua: values.rua,
+          bairro: values.bairro,
+          numero: values.numero,
           cidade: values.cidade,
           estado: values.estado,
           tipo_atendimento: values.tipoAtendimento,
-          valor_minimo: values.valorMinimo ? parseFloat(values.valorMinimo) : 0,
           status_aprovacao: 'pendente',
           crmv_document_url: crmv_document_url
         });
@@ -360,13 +367,12 @@ const RegistroVeterinarioPage = () => {
       });
       
       // Redirecionar para a página de login
-      navigate('/auth', { state: { successMessage: 'Cadastro realizado! Faça login para continuar.' } });
+      navigate('/vet/aguardando-aprovacao');
       
     } catch (error: any) {
       console.error('Erro no registro:', error);
       toast("Erro no cadastro", {
-        description: error.message || 'Ocorreu um erro ao criar sua conta.',
-        variant: "destructive"
+        description: error.message || 'Ocorreu um erro ao criar sua conta.'
       });
     } finally {
       setIsSubmitting(false);
@@ -519,10 +525,11 @@ const RegistroVeterinarioPage = () => {
               name="crmvDocument"
               render={({ field: { value, onChange, ...fieldProps } }) => (
                 <FormItem>
-                  <FormLabel>Documento CRMV (JPG, PNG ou PDF, máx 5MB)</FormLabel>
+                  <FormLabel>Documento CRMV (JPG, PNG ou PDF, máx 5MB)*</FormLabel>
                   <FormControl>
                     <div className="flex items-center space-x-2">
                       <Input
+                        id="crmvDocumentInput"
                         type="file"
                         accept="image/jpeg,image/png,application/pdf"
                         {...fieldProps}
@@ -569,24 +576,6 @@ const RegistroVeterinarioPage = () => {
                   <FormDescription>
                     Separe as especialidades por vírgulas
                   </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="bio"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Biografia</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Conte sobre sua experiência profissional" 
-                      className="min-h-[100px]"
-                      {...field} 
-                    />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -663,6 +652,50 @@ const RegistroVeterinarioPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
+                name="rua"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rua*</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome da rua" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="numero"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número*</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Número" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="bairro"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bairro*</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Bairro" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="cidade"
                 render={({ field }) => (
                   <FormItem>
@@ -729,26 +762,6 @@ const RegistroVeterinarioPage = () => {
                 </FormItem>
               )}
             />
-            
-            <FormField
-              control={form.control}
-              name="valorMinimo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Valor Mínimo da Consulta (R$)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0,00" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
         );
         
@@ -779,16 +792,12 @@ const RegistroVeterinarioPage = () => {
               {form.getValues('telefone') && (
                 <p><strong>Telefone:</strong> {form.getValues('telefone')}</p>
               )}
-              {form.getValues('bio') && (
-                <div>
-                  <strong>Biografia:</strong>
-                  <p className="mt-1">{form.getValues('bio')}</p>
-                </div>
-              )}
             </div>
             
             <div className="bg-muted/30 p-4 rounded-md">
               <h4 className="font-medium mb-2">Localização e Atendimento</h4>
+              <p><strong>Endereço:</strong> {form.getValues('rua')}, {form.getValues('numero')}</p>
+              <p><strong>Bairro:</strong> {form.getValues('bairro')}</p>
               <p><strong>CEP:</strong> {form.getValues('cep')}</p>
               <p><strong>Cidade/Estado:</strong> {form.getValues('cidade')}/{form.getValues('estado')}</p>
               <p>
@@ -797,7 +806,6 @@ const RegistroVeterinarioPage = () => {
                   form.getValues('tipoAtendimento') === 'domicilio' ? 'A Domicílio' : 'Ambos'
                 }
               </p>
-              <p><strong>Valor Mínimo:</strong> R$ {form.getValues('valorMinimo') || '0,00'}</p>
             </div>
             
             <div className="bg-[#C52339]/10 p-4 rounded-md border border-[#C52339]/20">
@@ -874,23 +882,6 @@ const RegistroVeterinarioPage = () => {
       </div>
     );
   };
-  
-  // Efeito para criar o bucket storage se não existir
-  React.useEffect(() => {
-    const createStorageBucketIfNeeded = async () => {
-      try {
-        const { data: buckets } = await supabase.storage.listBuckets();
-        if (!buckets?.find(b => b.name === 'crmvs')) {
-          // O bucket não existe, mas não podemos criá-lo diretamente do frontend
-          console.log('O bucket "crmvs" não existe. É necessário criá-lo no console do Supabase.');
-        }
-      } catch (error) {
-        console.error('Erro ao verificar buckets:', error);
-      }
-    };
-    
-    createStorageBucketIfNeeded();
-  }, []);
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
