@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, Upload, User, MapPin, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Check, Upload, User, ArrowRight, ArrowLeft } from 'lucide-react';
 
 // Schema para etapa 1
 const step1Schema = z.object({
@@ -39,8 +39,6 @@ const step2Schema = z.object({
   cidade: z.string().min(2, 'Cidade é obrigatória'),
   estado: z.string().length(2, 'UF deve ter 2 caracteres'),
   cep: z.string().min(8, 'CEP inválido').max(9, 'CEP inválido'),
-  latitude: z.string().optional(),
-  longitude: z.string().optional(),
   valor_minimo: z.string().min(1, 'Valor mínimo é obrigatório'),
 });
 
@@ -84,8 +82,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
     cidade: '',
     estado: '',
     cep: '',
-    latitude: '',
-    longitude: '',
     valor_minimo: '',
     confirma: false,
   });
@@ -115,8 +111,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
       cidade: profileData.cidade || '',
       estado: profileData.estado || '',
       cep: profileData.cep || '',
-      latitude: profileData.latitude || '',
-      longitude: profileData.longitude || '',
       valor_minimo: profileData.valor_minimo || '',
     },
   });
@@ -158,8 +152,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
           cidade: data.cidade || '',
           estado: data.estado || '',
           cep: data.cep || '',
-          latitude: data.latitude?.toString() || '',
-          longitude: data.longitude?.toString() || '',
           valor_minimo: data.valor_minimo?.toString() || '',
         });
         
@@ -181,8 +173,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
           cidade: data.cidade || '',
           estado: data.estado || '',
           cep: data.cep || '',
-          latitude: data.latitude?.toString() || '',
-          longitude: data.longitude?.toString() || '',
           valor_minimo: data.valor_minimo?.toString() || '',
         });
         
@@ -232,35 +222,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
       }
     } catch (error) {
       console.error('Erro ao buscar CEP:', error);
-    }
-  };
-
-  // Função para usar localização atual
-  const useCurrentLocation = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          step2Form.setValue('latitude', position.coords.latitude.toString());
-          step2Form.setValue('longitude', position.coords.longitude.toString());
-          toast({
-            title: 'Localização obtida',
-            description: 'Coordenadas atualizadas com sucesso',
-          });
-        },
-        (error) => {
-          toast({
-            title: 'Erro',
-            description: 'Não foi possível obter sua localização. Verifique as permissões.',
-            variant: 'destructive'
-          });
-        }
-      );
-    } else {
-      toast({
-        title: 'Erro',
-        description: 'Seu navegador não suporta geolocalização.',
-        variant: 'destructive'
-      });
     }
   };
 
@@ -354,8 +315,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
         cidade: profileData.cidade,
         estado: profileData.estado,
         cep: profileData.cep.replace(/\D/g, ''),
-        latitude: profileData.latitude ? parseFloat(profileData.latitude) : null,
-        longitude: profileData.longitude ? parseFloat(profileData.longitude) : null,
         valor_minimo: profileData.valor_minimo,
         status_aprovacao: 'pendente' as 'pendente', // Corrigindo o tipo explicitamente
         email: user?.email,
@@ -677,48 +636,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
                       </FormItem>
                     )}
                   />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={step2Form.control}
-                    name="latitude"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Latitude</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Latitude (opcional)" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={step2Form.control}
-                    name="longitude"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Longitude</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Longitude (opcional)" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="flex justify-center">
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={useCurrentLocation}
-                    className="flex items-center gap-2"
-                  >
-                    <MapPin className="h-4 w-4" />
-                    Usar minha localização atual
-                  </Button>
                 </div>
                 
                 <FormField
