@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -65,7 +66,11 @@ const especialidadesDisponiveis = [
   { id: 'exoticos', label: 'Animais Exóticos' },
 ];
 
-const VeterinarioProfileForm = () => {
+interface VeterinarioProfileFormProps {
+  onSubmit?: (data: any) => Promise<void>;
+}
+
+const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmit }) => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [profileData, setProfileData] = useState<any>({
@@ -191,8 +196,8 @@ const VeterinarioProfileForm = () => {
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar seus dados de perfil.',
+        title: "Erro",
+        description: "Não foi possível carregar seus dados de perfil.",
         variant: 'destructive'
       });
     } finally {
@@ -370,11 +375,16 @@ const VeterinarioProfileForm = () => {
       }
 
       if (result.error) throw result.error;
-
-      toast({
-        title: 'Perfil salvo',
-        description: 'Seu perfil foi enviado para análise e será aprovado em breve.',
-      });
+      
+      // Após salvar com sucesso, chamar o callback onSubmit se existir
+      if (onSubmit) {
+        await onSubmit(saveData);
+      } else {
+        toast({
+          title: 'Perfil salvo',
+          description: 'Seu perfil foi enviado para análise e será aprovado em breve.',
+        });
+      }
       
       // Atualizar o estado para refletir que agora existe um perfil
       setExistingProfile(true);
@@ -890,7 +900,7 @@ const VeterinarioProfileForm = () => {
       <div className="mb-8 text-center">
         <div className="flex justify-center mb-4">
           <div className="logo-container">
-            <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png" alt="HubbPet" />
+            <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo_ESCURO.png" alt="HubbPet" />
           </div>
         </div>
         <h1 className="text-2xl font-bold text-[#2D113F]">Cadastro de Perfil Veterinário</h1>
