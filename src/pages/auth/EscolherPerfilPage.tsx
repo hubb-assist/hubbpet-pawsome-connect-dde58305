@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,16 @@ const EscolherPerfilPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Navegar para o cadastro de veterinário
+  const handleVeterinaryCadastro = () => {
+    navigate('/registro-veterinario');
+  };
+
+  // Navegar para o cadastro de tutor
+  const handleTutorCadastro = () => {
+    navigate('/auth', { state: { registerAsTutor: true } });
+  };
+
   const handleSelectRole = (selectedRole: 'tutor' | 'veterinario') => {
     setIsLoading(true);
     
@@ -16,10 +25,10 @@ const EscolherPerfilPage: React.FC = () => {
       // Redirecionar para a página apropriada com base no papel selecionado
       if (selectedRole === 'veterinario') {
         // Para veterinários, redirecionar para o fluxo de registro específico
-        navigate('/registro-veterinario');
+        handleVeterinaryCadastro();
       } else {
         // Para tutores, redirecionar para o fluxo padrão de autenticação
-        navigate('/auth?role=tutor');
+        handleTutorCadastro();
       }
     } catch (error) {
       console.error("Erro ao navegar:", error);

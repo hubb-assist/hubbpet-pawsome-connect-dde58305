@@ -12,7 +12,43 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { CheckIcon, ArrowRight, ArrowLeft } from 'lucide-react';
+import { CheckIcon, ArrowRight, ArrowLeft, FileUp, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+// Função para validar CPF
+function validarCPF(cpf: string) {
+  // Remove caracteres não numéricos
+  cpf = cpf.replace(/[^\d]/g, '');
+  
+  // Verifica se possui 11 dígitos
+  if (cpf.length !== 11) return false;
+  
+  // Verifica se todos os dígitos são iguais
+  if (/^(\d)\1+$/.test(cpf)) return false;
+  
+  // Validação do dígito verificador
+  let soma = 0;
+  let resto;
+  
+  for (let i = 1; i <= 9; i++) {
+    soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+  }
+  
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cpf.substring(9, 10))) return false;
+  
+  soma = 0;
+  for (let i = 1; i <= 10; i++) {
+    soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+  }
+  
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cpf.substring(10, 11))) return false;
+  
+  return true;
+}
 
 // Esquema para a primeira etapa (dados pessoais e profissionais)
 const etapa1Schema = z.object({
@@ -22,9 +58,30 @@ const etapa1Schema = z.object({
   nomeCompleto: z.string().min(3, { message: 'Nome completo é obrigatório' }),
   crm: z.string().min(1, { message: 'CRM é obrigatório' }),
   estadoCrm: z.string().min(2, { message: 'Estado do CRM é obrigatório' }),
+  cpf: z.string()
+    .min(11, { message: 'CPF é obrigatório' })
+    .refine((cpf) => validarCPF(cpf), { message: 'CPF inválido' }),
+  rg: z.string().optional(),
   especialidades: z.string().optional(),
   bio: z.string().optional(),
-  telefone: z.string().optional(),
+  telefone: z.string()
+    .min(10, { message: 'Telefone é obrigatório' })
+    .refine((tel) => /^\(\d{2}\) \d{5}-\d{4}$/.test(tel) || /^\d{10,11}$/.test(tel), {
+      message: 'Telefone inválido'
+    }),
+  crmvDocument: z
+    .instanceof(FileList)
+    .refine((files) => {
+      return !files.length || (files.length > 0 && files[0].size <= 5 * 1024 * 1024);
+    }, 'O arquivo deve ter no máximo 5MB')
+    .refine((files) => {
+      if (!files.length) return true;
+      const file = files[0];
+      const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+      return validTypes.includes(file.type);
+    }, 'Formato permitido: JPG, PNG ou PDF')
+    .optional()
+    .or(z.literal('')),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -47,9 +104,21 @@ const formSchema = z.object({
   nomeCompleto: z.string().min(3, { message: 'Nome completo é obrigatório' }),
   crm: z.string().min(1, { message: 'CRM é obrigatório' }),
   estadoCrm: z.string().min(2, { message: 'Estado do CRM é obrigatório' }),
+  cpf: z.string()
+    .min(11, { message: 'CPF é obrigatório' })
+    .refine((cpf) => validarCPF(cpf), { message: 'CPF inválido' }),
+  rg: z.string().optional(),
   especialidades: z.string().optional(),
   bio: z.string().optional(),
-  telefone: z.string().optional(),
+  telefone: z.string()
+    .min(10, { message: 'Telefone é obrigatório' })
+    .refine((tel) => /^\(\d{2}\) \d{5}-\d{4}$/.test(tel) || /^\d{10,11}$/.test(tel), {
+      message: 'Telefone inválido'
+    }),
+  crmvDocument: z
+    .instanceof(FileList)
+    .optional()
+    .or(z.literal('')),
   cep: z.string().min(8, { message: 'CEP é obrigatório' }),
   cidade: z.string().min(1, { message: 'Cidade é obrigatória' }),
   estado: z.string().min(2, { message: 'Estado é obrigatório' }),
@@ -66,6 +135,9 @@ type FormValues = z.infer<typeof formSchema>;
 const RegistroVeterinarioPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  const [crmvFile, setCrmvFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const navigate = useNavigate();
   
   // Configuração do formulário com validação Zod
@@ -80,6 +152,8 @@ const RegistroVeterinarioPage = () => {
       nomeCompleto: '',
       crm: '',
       estadoCrm: '',
+      cpf: '',
+      rg: '',
       especialidades: '',
       bio: '',
       telefone: '',
@@ -92,14 +166,78 @@ const RegistroVeterinarioPage = () => {
     mode: 'onChange'
   });
   
+  // Função para aplicar máscara de CPF
+  const aplicarMascaraCPF = (cpf: string) => {
+    cpf = cpf.replace(/\D/g, '').slice(0, 11);
+    if (cpf.length <= 3) return cpf;
+    if (cpf.length <= 6) return `${cpf.slice(0, 3)}.${cpf.slice(3)}`;
+    if (cpf.length <= 9) return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6)}`;
+    return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9, 11)}`;
+  };
+  
+  // Função para aplicar máscara de RG
+  const aplicarMascaraRG = (rg: string) => {
+    rg = rg.replace(/[^\dxX]/g, '').slice(0, 9);
+    if (rg.length <= 2) return rg;
+    if (rg.length <= 5) return `${rg.slice(0, 2)}.${rg.slice(2)}`;
+    if (rg.length <= 8) return `${rg.slice(0, 2)}.${rg.slice(2, 5)}.${rg.slice(5)}`;
+    return `${rg.slice(0, 2)}.${rg.slice(2, 5)}.${rg.slice(5, 8)}-${rg.slice(8)}`;
+  };
+  
+  // Função para aplicar máscara de telefone
+  const aplicarMascaraTelefone = (telefone: string) => {
+    telefone = telefone.replace(/\D/g, '').slice(0, 11);
+    if (telefone.length <= 2) return telefone;
+    if (telefone.length <= 7) return `(${telefone.slice(0, 2)}) ${telefone.slice(2)}`;
+    return `(${telefone.slice(0, 2)}) ${telefone.slice(2, 7)}-${telefone.slice(7)}`;
+  };
+  
+  // Função para aplicar máscara de CEP
+  const aplicarMascaraCEP = (cep: string) => {
+    cep = cep.replace(/\D/g, '').slice(0, 8);
+    if (cep.length <= 5) return cep;
+    return `${cep.slice(0, 5)}-${cep.slice(5)}`;
+  };
+  
+  // Função para buscar CEP
+  const buscarCEP = async (cep: string) => {
+    cep = cep.replace(/\D/g, '');
+    
+    if (cep.length !== 8) return;
+    
+    setBuscandoCep(true);
+    
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      
+      if (!data.erro) {
+        form.setValue('cidade', data.localidade, { shouldValidate: true });
+        form.setValue('estado', data.uf, { shouldValidate: true });
+      } else {
+        toast("CEP não encontrado", {
+          description: "Verifique o CEP informado ou preencha os campos manualmente.",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+      toast("Erro ao buscar CEP", {
+        description: "Não foi possível consultar o CEP. Preencha os campos manualmente.",
+        variant: "destructive"
+      });
+    } finally {
+      setBuscandoCep(false);
+    }
+  };
+  
   // Função para avançar para a próxima etapa
   const handleNext = async () => {
     if (currentStep === 1) {
       // Validar apenas os campos da primeira etapa
       const result = await form.trigger([
         'email', 'password', 'confirmPassword', 'nomeCompleto', 
-        'crm', 'estadoCrm', 'especialidades', 'bio', 'telefone'
-      ]);
+        'crm', 'estadoCrm', 'cpf', 'rg', 'especialidades', 'bio', 'telefone'
+      ], { shouldFocus: true });
       
       if (result) {
         setCurrentStep(currentStep + 1);
@@ -108,7 +246,7 @@ const RegistroVeterinarioPage = () => {
       // Validar apenas os campos da segunda etapa
       const result = await form.trigger([
         'cep', 'cidade', 'estado', 'tipoAtendimento', 'valorMinimo'
-      ]);
+      ], { shouldFocus: true });
       
       if (result) {
         setCurrentStep(currentStep + 1);
@@ -120,12 +258,55 @@ const RegistroVeterinarioPage = () => {
   const handleBack = () => {
     setCurrentStep(currentStep - 1);
   };
+
+  // Função para fazer upload do documento CRMV
+  const uploadCRMVDocument = async (file: File) => {
+    if (!file) return null;
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `crmvs/${fileName}`;
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('crmvs')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          onUploadProgress: (progress) => {
+            setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
+          },
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      // Obter URL pública do arquivo
+      const { data: urlData } = supabase.storage.from('crmvs').getPublicUrl(filePath);
+      
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      throw new Error('Falha ao fazer upload do documento CRMV');
+    }
+  };
   
   // Função para processar o envio do formulário
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     
     try {
+      let crmv_document_url = null;
+      
+      // Upload do CRMV document (se existir)
+      if (crmvFile) {
+        crmv_document_url = await uploadCRMVDocument(crmvFile);
+      }
+      
+      // Remover máscaras dos campos antes de enviar
+      const cpfSemMascara = values.cpf.replace(/\D/g, '');
+      const telefoneSemMascara = values.telefone.replace(/\D/g, '');
+      const cepSemMascara = values.cep.replace(/\D/g, '');
+      
       // 1. Criação da conta no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
@@ -157,22 +338,25 @@ const RegistroVeterinarioPage = () => {
           email: values.email,
           crm: values.crm,
           estado_crm: values.estadoCrm,
+          cpf: values.cpf, // Mantemos a máscara para exibição
+          rg: values.rg, // Mantemos a máscara para exibição
           especialidades: especialidadesArray,
           bio: values.bio || null,
-          telefone: values.telefone || null,
-          cep: values.cep,
+          telefone: telefoneSemMascara,
+          cep: cepSemMascara,
           cidade: values.cidade,
           estado: values.estado,
           tipo_atendimento: values.tipoAtendimento,
           valor_minimo: values.valorMinimo ? parseFloat(values.valorMinimo) : 0,
-          status_aprovacao: 'pendente'
+          status_aprovacao: 'pendente',
+          crmv_document_url: crmv_document_url
         });
       
       if (profileError) throw profileError;
       
       // Exibir mensagem de sucesso
-      toast("Cadastro realizado com sucesso", {
-        description: "Seu perfil foi enviado para análise. Acesse com seu e-mail e senha."
+      toast("✅ Cadastro realizado com sucesso", {
+        description: "Seu cadastro foi enviado com sucesso e está em análise. Em breve você receberá um e-mail com a aprovação da equipe do HubbPet."
       });
       
       // Redirecionar para a página de login
@@ -181,7 +365,8 @@ const RegistroVeterinarioPage = () => {
     } catch (error: any) {
       console.error('Erro no registro:', error);
       toast("Erro no cadastro", {
-        description: error.message || 'Ocorreu um erro ao criar sua conta.'
+        description: error.message || 'Ocorreu um erro ao criar sua conta.',
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
@@ -201,7 +386,7 @@ const RegistroVeterinarioPage = () => {
                 <FormItem>
                   <FormLabel>E-mail*</FormLabel>
                   <FormControl>
-                    <Input placeholder="seu.email@exemplo.com" {...field} />
+                    <Input placeholder="seu.email@exemplo.com" type="email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -239,7 +424,7 @@ const RegistroVeterinarioPage = () => {
             </div>
 
             <Separator className="my-4" />
-            <h3 className="text-lg font-medium">Dados Profissionais</h3>
+            <h3 className="text-lg font-medium">Dados Pessoais e Profissionais</h3>
             
             <FormField
               control={form.control}
@@ -248,12 +433,56 @@ const RegistroVeterinarioPage = () => {
                 <FormItem>
                   <FormLabel>Nome Completo*</FormLabel>
                   <FormControl>
-                    <Input placeholder="Dr. Nome Sobrenome" {...field} />
+                    <Input placeholder="Dr. Nome Sobrenome" type="text" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="cpf"
+                render={({ field: { onChange, ...fieldProps } }) => (
+                  <FormItem>
+                    <FormLabel>CPF*</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="000.000.000-00"
+                        {...fieldProps}
+                        onChange={(e) => {
+                          const maskedValue = aplicarMascaraCPF(e.target.value);
+                          onChange(maskedValue);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="rg"
+                render={({ field: { onChange, ...fieldProps } }) => (
+                  <FormItem>
+                    <FormLabel>RG</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="00.000.000-0"
+                        {...fieldProps}
+                        onChange={(e) => {
+                          const maskedValue = aplicarMascaraRG(e.target.value);
+                          onChange(maskedValue);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -261,9 +490,9 @@ const RegistroVeterinarioPage = () => {
                 name="crm"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>CRM*</FormLabel>
+                    <FormLabel>CRMV*</FormLabel>
                     <FormControl>
-                      <Input placeholder="Número do CRM" {...field} />
+                      <Input placeholder="Número do CRMV" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -275,15 +504,55 @@ const RegistroVeterinarioPage = () => {
                 name="estadoCrm"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Estado do CRM*</FormLabel>
+                    <FormLabel>Estado do CRMV*</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: SP" {...field} />
+                      <Input placeholder="Ex: SP" maxLength={2} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="crmvDocument"
+              render={({ field: { value, onChange, ...fieldProps } }) => (
+                <FormItem>
+                  <FormLabel>Documento CRMV (JPG, PNG ou PDF, máx 5MB)</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="file"
+                        accept="image/jpeg,image/png,application/pdf"
+                        {...fieldProps}
+                        onChange={(e) => {
+                          onChange(e.target.files);
+                          if (e.target.files && e.target.files[0]) {
+                            setCrmvFile(e.target.files[0]);
+                          }
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => document.getElementById('crmvDocumentInput')?.click()}
+                      >
+                        <FileUp size={18} />
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                  {crmvFile && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Arquivo selecionado: {crmvFile.name}
+                    </div>
+                  )}
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
@@ -326,11 +595,18 @@ const RegistroVeterinarioPage = () => {
             <FormField
               control={form.control}
               name="telefone"
-              render={({ field }) => (
+              render={({ field: { onChange, ...fieldProps } }) => (
                 <FormItem>
-                  <FormLabel>Telefone</FormLabel>
+                  <FormLabel>Telefone*</FormLabel>
                   <FormControl>
-                    <Input placeholder="(00) 00000-0000" {...field} />
+                    <Input 
+                      placeholder="(00) 00000-0000" 
+                      {...fieldProps} 
+                      onChange={(e) => {
+                        const maskedValue = aplicarMascaraTelefone(e.target.value);
+                        onChange(maskedValue);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -347,12 +623,38 @@ const RegistroVeterinarioPage = () => {
             <FormField
               control={form.control}
               name="cep"
-              render={({ field }) => (
+              render={({ field: { onChange, onBlur, ...fieldProps } }) => (
                 <FormItem>
                   <FormLabel>CEP*</FormLabel>
                   <FormControl>
-                    <Input placeholder="00000-000" {...field} />
+                    <div className="flex items-center space-x-2 relative">
+                      <Input 
+                        placeholder="00000-000" 
+                        {...fieldProps} 
+                        onChange={(e) => {
+                          const maskedValue = aplicarMascaraCEP(e.target.value);
+                          onChange(maskedValue);
+                        }}
+                        onBlur={(e) => {
+                          onBlur();
+                          const cep = e.target.value.replace(/\D/g, '');
+                          if (cep.length === 8) {
+                            buscarCEP(cep);
+                          }
+                        }}
+                      />
+                      {buscandoCep && (
+                        <div className="absolute right-3">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
+                  {buscandoCep && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Buscando endereço...
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -380,7 +682,7 @@ const RegistroVeterinarioPage = () => {
                   <FormItem>
                     <FormLabel>Estado*</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: SP" {...field} />
+                      <Input placeholder="Ex: SP" maxLength={2} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -461,9 +763,16 @@ const RegistroVeterinarioPage = () => {
             </div>
             
             <div className="bg-muted/30 p-4 rounded-md">
-              <h4 className="font-medium mb-2">Dados Profissionais</h4>
+              <h4 className="font-medium mb-2">Dados Pessoais e Profissionais</h4>
               <p><strong>Nome:</strong> {form.getValues('nomeCompleto')}</p>
-              <p><strong>CRM:</strong> {form.getValues('crm')} / {form.getValues('estadoCrm')}</p>
+              <p><strong>CPF:</strong> {form.getValues('cpf')}</p>
+              {form.getValues('rg') && (
+                <p><strong>RG:</strong> {form.getValues('rg')}</p>
+              )}
+              <p><strong>CRMV:</strong> {form.getValues('crm')} / {form.getValues('estadoCrm')}</p>
+              {crmvFile && (
+                <p><strong>Documento CRMV:</strong> {crmvFile.name}</p>
+              )}
               {form.getValues('especialidades') && (
                 <p><strong>Especialidades:</strong> {form.getValues('especialidades')}</p>
               )}
@@ -565,6 +874,23 @@ const RegistroVeterinarioPage = () => {
       </div>
     );
   };
+  
+  // Efeito para criar o bucket storage se não existir
+  React.useEffect(() => {
+    const createStorageBucketIfNeeded = async () => {
+      try {
+        const { data: buckets } = await supabase.storage.listBuckets();
+        if (!buckets?.find(b => b.name === 'crmvs')) {
+          // O bucket não existe, mas não podemos criá-lo diretamente do frontend
+          console.log('O bucket "crmvs" não existe. É necessário criá-lo no console do Supabase.');
+        }
+      } catch (error) {
+        console.error('Erro ao verificar buckets:', error);
+      }
+    };
+    
+    createStorageBucketIfNeeded();
+  }, []);
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

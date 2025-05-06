@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -16,6 +15,7 @@ import VeterinarioPerfilPage from "./pages/veterinario/VeterinarioPerfilPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import EscolherPerfilPage from "./pages/auth/EscolherPerfilPage";
 import RegistroVeterinarioPage from "./pages/auth/RegistroVeterinarioPage";
+import AguardandoAprovacaoPage from "./pages/auth/AguardandoAprovacaoPage";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -42,6 +42,7 @@ const App = () => {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/escolher-perfil" element={<EscolherPerfilPage />} />
               <Route path="/registro-veterinario" element={<RegistroVeterinarioPage />} />
+              <Route path="/vet/aguardando-aprovacao" element={<AguardandoAprovacaoPage />} />
               
               {/* Rotas de tutor */}
               <Route path="/tutor" element={

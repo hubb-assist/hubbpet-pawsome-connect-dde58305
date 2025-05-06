@@ -236,8 +236,10 @@ export type Database = {
           bio: string | null
           cep: string | null
           cidade: string | null
+          cpf: string | null
           created_at: string | null
           crm: string
+          crmv_document_url: string | null
           email: string
           especialidades: string[] | null
           estado: string | null
@@ -247,6 +249,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           nome_completo: string
+          rg: string | null
           status_aprovacao: Database["public"]["Enums"]["aprovacao_status"]
           telefone: string | null
           tipo_atendimento: Database["public"]["Enums"]["atendimento_tipo"]
@@ -258,8 +261,10 @@ export type Database = {
           bio?: string | null
           cep?: string | null
           cidade?: string | null
+          cpf?: string | null
           created_at?: string | null
           crm: string
+          crmv_document_url?: string | null
           email: string
           especialidades?: string[] | null
           estado?: string | null
@@ -269,6 +274,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           nome_completo: string
+          rg?: string | null
           status_aprovacao?: Database["public"]["Enums"]["aprovacao_status"]
           telefone?: string | null
           tipo_atendimento?: Database["public"]["Enums"]["atendimento_tipo"]
@@ -280,8 +286,10 @@ export type Database = {
           bio?: string | null
           cep?: string | null
           cidade?: string | null
+          cpf?: string | null
           created_at?: string | null
           crm?: string
+          crmv_document_url?: string | null
           email?: string
           especialidades?: string[] | null
           estado?: string | null
@@ -291,6 +299,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           nome_completo?: string
+          rg?: string | null
           status_aprovacao?: Database["public"]["Enums"]["aprovacao_status"]
           telefone?: string | null
           tipo_atendimento?: Database["public"]["Enums"]["atendimento_tipo"]
