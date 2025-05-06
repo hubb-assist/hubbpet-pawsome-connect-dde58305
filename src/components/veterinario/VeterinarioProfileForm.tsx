@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,7 +29,6 @@ const step1Schema = z.object({
   estado_crm: z.string().length(2, 'UF deve ter 2 caracteres'),
   tipo_atendimento: z.enum(['clinica', 'domicilio', 'ambos']),
   especialidades: z.array(z.string()).min(1, 'Selecione pelo menos uma especialidade'),
-  bio: z.string().optional(),
   foto_perfil: z.string().optional(),
 });
 
@@ -39,7 +37,6 @@ const step2Schema = z.object({
   cidade: z.string().min(2, 'Cidade é obrigatória'),
   estado: z.string().length(2, 'UF deve ter 2 caracteres'),
   cep: z.string().min(8, 'CEP inválido').max(9, 'CEP inválido'),
-  valor_minimo: z.string().min(1, 'Valor mínimo é obrigatório'),
 });
 
 // Schema para etapa 3
@@ -77,12 +74,10 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
     estado_crm: '',
     tipo_atendimento: 'clinica',
     especialidades: [],
-    bio: '',
     foto_perfil: '',
     cidade: '',
     estado: '',
     cep: '',
-    valor_minimo: '',
     confirma: false,
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -100,7 +95,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
       estado_crm: profileData.estado_crm || '',
       tipo_atendimento: profileData.tipo_atendimento || 'clinica',
       especialidades: profileData.especialidades || [],
-      bio: profileData.bio || '',
       foto_perfil: profileData.foto_perfil || '',
     },
   });
@@ -111,7 +105,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
       cidade: profileData.cidade || '',
       estado: profileData.estado || '',
       cep: profileData.cep || '',
-      valor_minimo: profileData.valor_minimo || '',
     },
   });
 
@@ -147,12 +140,10 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
           estado_crm: data.estado_crm || '',
           tipo_atendimento: data.tipo_atendimento || 'clinica',
           especialidades: data.especialidades || [],
-          bio: data.bio || '',
           foto_perfil: data.foto_perfil || '',
           cidade: data.cidade || '',
           estado: data.estado || '',
           cep: data.cep || '',
-          valor_minimo: data.valor_minimo?.toString() || '',
         });
         
         if (data.foto_perfil) {
@@ -165,7 +156,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
           estado_crm: data.estado_crm || '',
           tipo_atendimento: data.tipo_atendimento || 'clinica',
           especialidades: data.especialidades || [],
-          bio: data.bio || '',
           foto_perfil: data.foto_perfil || '',
         });
         
@@ -173,7 +163,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
           cidade: data.cidade || '',
           estado: data.estado || '',
           cep: data.cep || '',
-          valor_minimo: data.valor_minimo?.toString() || '',
         });
         
         setExistingProfile(true);
@@ -271,12 +260,9 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
       setProfileData({ ...profileData, ...formData });
       setStep(2);
     } else if (step === 2) {
-      // Converter valor monetário para número
-      const valorMinimo = formData.valor_minimo.replace(/\D/g, '');
       setProfileData({ 
         ...profileData, 
-        ...formData,
-        valor_minimo: parseFloat((parseInt(valorMinimo) / 100).toFixed(2))
+        ...formData
       });
       setStep(3);
     }
@@ -287,14 +273,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
     if (step > 1) {
       setStep(step - 1);
     }
-  };
-
-  // Função para formatar valor monetário
-  const formatMoney = (value: string) => {
-    value = value.replace(/\D/g, '');
-    if (value === '') return '';
-    value = (parseInt(value) / 100).toFixed(2);
-    return `R$ ${value.replace('.', ',')}`;
   };
 
   // Função para salvar perfil
@@ -310,12 +288,10 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
         estado_crm: profileData.estado_crm,
         tipo_atendimento: profileData.tipo_atendimento,
         especialidades: profileData.especialidades,
-        bio: profileData.bio || null,
         foto_perfil: profileData.foto_perfil || null,
         cidade: profileData.cidade,
         estado: profileData.estado,
         cep: profileData.cep.replace(/\D/g, ''),
-        valor_minimo: profileData.valor_minimo,
         status_aprovacao: 'pendente' as 'pendente', // Corrigindo o tipo explicitamente
         email: user?.email,
       };
@@ -499,24 +475,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
                 
                 <FormField
                   control={step1Form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Apresentação Profissional</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Fale um pouco sobre sua experiência profissional e áreas de atuação..." 
-                          className="min-h-[120px]" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={step1Form.control}
                   name="foto_perfil"
                   render={({ field: { value, onChange, ...fieldProps } }) => (
                     <FormItem>
@@ -637,28 +595,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
                     )}
                   />
                 </div>
-                
-                <FormField
-                  control={step2Form.control}
-                  name="valor_minimo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor Mínimo de Consulta</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="R$ 0,00" 
-                          {...field} 
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/[R$\s]/g, '');
-                            field.onChange(value);
-                            e.target.value = formatMoney(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
               
               <div className="pt-4 flex justify-between">
@@ -743,20 +679,6 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
                         <h4 className="font-semibold">Localização</h4>
                         <p className="text-sm">{profileData.cidade} - {profileData.estado}</p>
                       </div>
-                      
-                      <div>
-                        <h4 className="font-semibold">Valor Mínimo</h4>
-                        <p className="text-sm">R$ {typeof profileData.valor_minimo === 'number' 
-                          ? profileData.valor_minimo.toFixed(2).replace('.', ',') 
-                          : profileData.valor_minimo}</p>
-                      </div>
-                      
-                      {profileData.bio && (
-                        <div>
-                          <h4 className="font-semibold">Sobre</h4>
-                          <p className="text-sm">{profileData.bio}</p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -852,7 +774,7 @@ const VeterinarioProfileForm: React.FC<VeterinarioProfileFormProps> = ({ onSubmi
           </div>
           <div className="text-center flex-1">
             <span className={`${step === 2 ? 'font-medium text-[#2D113F]' : 'text-gray-500'}`}>
-              Localização e Preço
+              Localização
             </span>
           </div>
           <div className="text-center flex-1">

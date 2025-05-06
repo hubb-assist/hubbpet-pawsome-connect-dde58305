@@ -70,16 +70,17 @@ const etapa1Schema = z.object({
   crmvDocument: z
     .instanceof(FileList)
     .refine((files) => {
-      return !files.length || (files.length > 0 && files[0].size <= 5 * 1024 * 1024);
+      return files.length > 0;
+    }, 'O documento CRMV é obrigatório')
+    .refine((files) => {
+      return files.length === 0 || (files.length > 0 && files[0].size <= 5 * 1024 * 1024);
     }, 'O arquivo deve ter no máximo 5MB')
     .refine((files) => {
       if (!files.length) return true;
       const file = files[0];
       const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
       return validTypes.includes(file.type);
-    }, 'Formato permitido: JPG, PNG ou PDF')
-    .optional()
-    .or(z.literal('')),
+    }, 'Formato permitido: JPG, PNG ou PDF'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -116,8 +117,9 @@ const formSchema = z.object({
     }),
   crmvDocument: z
     .instanceof(FileList)
-    .optional()
-    .or(z.literal('')),
+    .refine((files) => {
+      return files.length > 0;
+    }, 'O documento CRMV é obrigatório'),
   cep: z.string().min(8, { message: 'CEP é obrigatório' }),
   rua: z.string().min(1, { message: 'Rua é obrigatória' }),
   bairro: z.string().min(1, { message: 'Bairro é obrigatório' }),
@@ -220,13 +222,15 @@ const RegistroVeterinarioPage = () => {
         form.setValue('estado', data.uf, { shouldValidate: true });
         // O número precisa ser preenchido manualmente
       } else {
-        toast("CEP não encontrado", {
+        toast({
+          title: "CEP não encontrado",
           description: "Verifique o CEP informado ou preencha os campos manualmente."
         });
       }
     } catch (error) {
       console.error('Erro ao buscar CEP:', error);
-      toast("Erro ao buscar CEP", {
+      toast({
+        title: "Erro ao buscar CEP",
         description: "Não foi possível consultar o CEP. Preencha os campos manualmente."
       });
     } finally {
@@ -240,7 +244,7 @@ const RegistroVeterinarioPage = () => {
       // Validar apenas os campos da primeira etapa
       const result = await form.trigger([
         'email', 'password', 'confirmPassword', 'nomeCompleto', 
-        'crm', 'estadoCrm', 'cpf', 'rg', 'especialidades', 'telefone'
+        'crm', 'estadoCrm', 'cpf', 'rg', 'especialidades', 'telefone', 'crmvDocument'
       ], { shouldFocus: true });
       
       if (result) {
@@ -273,10 +277,6 @@ const RegistroVeterinarioPage = () => {
       const filePath = `${userId}/${fileName}`;
       
       // Criar referência para progresso do upload
-      const progressHandler = (progress: { loaded: number, total: number }) => {
-        setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
-      };
-      
       const { error: uploadError, data } = await supabase.storage
         .from('crmvs')
         .upload(filePath, file, {
@@ -309,6 +309,8 @@ const RegistroVeterinarioPage = () => {
           data: {
             name: values.nomeCompleto,
             role: 'veterinario',
+            crm: values.crm,
+            estado_crm: values.estadoCrm
           }
         }
       });
@@ -321,7 +323,7 @@ const RegistroVeterinarioPage = () => {
       
       let crmv_document_url = null;
       
-      // Upload do CRMV document (se existir)
+      // Upload do CRMV document
       if (crmvFile) {
         crmv_document_url = await uploadCRMVDocument(crmvFile, authData.user.id);
       }
@@ -338,14 +340,14 @@ const RegistroVeterinarioPage = () => {
       
       const { error: profileError } = await supabase
         .from('veterinarios')
-        .insert({
+        .upsert({
           user_id: authData.user.id,
           nome_completo: values.nomeCompleto,
           email: values.email,
           crm: values.crm,
           estado_crm: values.estadoCrm,
-          cpf: values.cpf, // Mantemos a máscara para exibição
-          rg: values.rg, // Mantemos a máscara para exibição
+          cpf: values.cpf,
+          rg: values.rg,
           especialidades: especialidadesArray,
           telefone: telefoneSemMascara,
           cep: cepSemMascara,
@@ -362,7 +364,8 @@ const RegistroVeterinarioPage = () => {
       if (profileError) throw profileError;
       
       // Exibir mensagem de sucesso
-      toast("✅ Cadastro realizado com sucesso", {
+      toast({
+        title: "✅ Cadastro realizado com sucesso",
         description: "Seu cadastro foi enviado com sucesso e está em análise. Em breve você receberá um e-mail com a aprovação da equipe do HubbPet."
       });
       
@@ -371,7 +374,8 @@ const RegistroVeterinarioPage = () => {
       
     } catch (error: any) {
       console.error('Erro no registro:', error);
-      toast("Erro no cadastro", {
+      toast({
+        title: "Erro no cadastro",
         description: error.message || 'Ocorreu um erro ao criar sua conta.'
       });
     } finally {
