@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -158,7 +159,7 @@ export default function AuthForm() {
       <CardHeader>
         <div className="flex justify-center mb-6">
           <div className="logo-container">
-            <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png" alt="HubbPet" />
+            <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo_ESCURO.png" alt="HubbPet" />
           </div>
         </div>
         <CardTitle className="text-2xl text-center text-[#2D113F]">
@@ -179,7 +180,7 @@ export default function AuthForm() {
         )}
         
         {needsEmailConfirmation && (
-          <Alert variant="warning" className="mb-4">
+          <Alert className="mb-4" variant="default">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Confirmação de E-mail Necessária</AlertTitle>
             <AlertDescription className="mt-2">

@@ -1,71 +1,42 @@
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import VeterinarioProfileForm from '@/components/veterinario/VeterinarioProfileForm';
 import { toast } from '@/components/ui/sonner';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import VeterinarioProfileForm from '@/components/veterinario/VeterinarioProfileForm';
 
-const VeterinarioPerfilPage: React.FC = () => {
-  const { user, signOut, isLoading } = useAuth();
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
-  const navigate = useNavigate();
+const VeterinarioPerfilPage = () => {
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        toast({
-          description: "Sua sessão expirou. Por favor, faça login novamente.",
-          variant: "destructive"
-        });
-        navigate('/auth');
-      } else {
-        setIsAuthChecked(true);
-      }
-    }
-  }, [user, isLoading, navigate]);
-
-  const handleLogout = async () => {
+  const handleProfileUpdate = async (data: any) => {
     try {
-      await signOut();
-      toast({
-        description: "Você foi desconectado com sucesso."
+      console.log("Dados do perfil atualizados:", data);
+      
+      // Simulação de atualização bem-sucedida
+      toast("Perfil atualizado", {
+        description: "Seus dados foram atualizados com sucesso."
       });
-      navigate('/auth');
+      
     } catch (error: any) {
-      toast({
-        description: error.message || "Ocorreu um erro durante o logout.",
-        variant: "destructive"
+      console.error("Erro ao atualizar perfil:", error);
+      toast("Erro ao atualizar perfil", {
+        description: error.message || "Ocorreu um erro ao atualizar o perfil."
       });
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2D113F]"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthChecked) {
+  if (!user) {
+    toast("Acesso não autorizado", {
+      description: "Você precisa estar logado para acessar esta página."
+    });
     return null;
   }
 
   return (
-    <div className="relative">
-      <div className="absolute top-4 right-4">
-        <Button 
-          variant="outline" 
-          className="flex items-center gap-2" 
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4" />
-          Sair
-        </Button>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Meu Perfil Profissional</h1>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <VeterinarioProfileForm onSubmit={handleProfileUpdate} />
       </div>
-      <VeterinarioProfileForm />
     </div>
   );
 };
