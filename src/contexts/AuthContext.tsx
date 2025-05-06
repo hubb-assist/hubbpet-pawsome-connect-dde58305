@@ -51,6 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }, 0);
         } else {
           setUserRole(null);
+          setIsLoading(false);
         }
       }
     );
@@ -149,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message || "Ocorreu um erro durante o login.",
         variant: "destructive"
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
