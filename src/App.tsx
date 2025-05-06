@@ -12,10 +12,10 @@ import NotFound from "./pages/NotFound";
 import TutorDashboard from "./pages/tutor/TutorDashboard";
 import VeterinarioDashboard from "./pages/veterinario/VeterinarioDashboard";
 import VeterinarioPerfilPage from "./pages/veterinario/VeterinarioPerfilPage";
+import AguardandoAprovacaoPage from "./pages/veterinario/AguardandoAprovacaoPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import EscolherPerfilPage from "./pages/auth/EscolherPerfilPage";
 import RegistroVeterinarioPage from "./pages/auth/RegistroVeterinarioPage";
-import AguardandoAprovacaoPage from "./pages/auth/AguardandoAprovacaoPage";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
