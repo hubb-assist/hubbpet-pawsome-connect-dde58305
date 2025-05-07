@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -24,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Loader2 } from "lucide-react";
 
 interface ProcedimentoFormDialogProps {
   open: boolean;
@@ -41,6 +43,8 @@ const formSchema = z.object({
   descricao: z.string().optional(),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 const ProcedimentoFormDialog = ({
   open,
   onOpenChange,
@@ -49,7 +53,7 @@ const ProcedimentoFormDialog = ({
 }: ProcedimentoFormDialogProps) => {
   const isEditing = !!procedimento;
   
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: "",
@@ -71,7 +75,7 @@ const ProcedimentoFormDialog = ({
     }
   }, [procedimento, form]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     try {
       if (isEditing) {
         // Atualizando procedimento existente
@@ -105,6 +109,8 @@ const ProcedimentoFormDialog = ({
     }
   };
 
+  const isSubmitting = form.formState.isSubmitting;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -112,6 +118,11 @@ const ProcedimentoFormDialog = ({
           <DialogTitle>
             {isEditing ? "Editar Procedimento" : "Adicionar Procedimento"}
           </DialogTitle>
+          <DialogDescription>
+            {isEditing 
+              ? "Edite os dados do procedimento existente." 
+              : "Preencha os campos abaixo para cadastrar um novo procedimento."}
+          </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
@@ -121,9 +132,13 @@ const ProcedimentoFormDialog = ({
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Procedimento</FormLabel>
+                  <FormLabel>Nome do Procedimento*</FormLabel>
                   <FormControl>
-                    <Input placeholder="Digite o nome" {...field} />
+                    <Input 
+                      placeholder="Digite o nome" 
+                      {...field} 
+                      disabled={isSubmitting} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -142,6 +157,7 @@ const ProcedimentoFormDialog = ({
                       className="resize-none min-h-[100px]" 
                       {...field} 
                       value={field.value || ""}
+                      disabled={isSubmitting}
                     />
                   </FormControl>
                   <FormMessage />
@@ -150,11 +166,23 @@ const ProcedimentoFormDialog = ({
             />
             
             <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">
-                {isEditing ? "Atualizar" : "Salvar"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isEditing ? "Atualizando..." : "Salvando..."}
+                  </>
+                ) : (
+                  isEditing ? "Atualizar" : "Salvar"
+                )}
               </Button>
             </DialogFooter>
           </form>

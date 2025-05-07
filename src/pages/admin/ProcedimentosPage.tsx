@@ -2,13 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, ArrowUpDown, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ProcedimentoFormDialog from '@/components/admin/ProcedimentoFormDialog';
 import DeleteConfirmationDialog from '@/components/tutor/DeleteConfirmationDialog';
 import { Procedimento } from '@/shared/types';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const ProcedimentosPage = () => {
   const [procedimentos, setProcedimentos] = useState<Procedimento[]>([]);
@@ -18,6 +27,13 @@ const ProcedimentosPage = () => {
   const [procedimentoToDelete, setProcedimentoToDelete] = useState<Procedimento | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Procedimento,
+    direction: 'asc' | 'desc'
+  }>({
+    key: 'created_at',
+    direction: 'desc'
+  });
 
   const loadProcedimentos = async () => {
     setIsLoading(true);
@@ -76,21 +92,56 @@ const ProcedimentosPage = () => {
     }
   };
 
-  const filteredProcedimentos = procedimentos.filter(procedimento =>
+  const requestSort = (key: keyof Procedimento) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedProcedimentos = React.useMemo(() => {
+    let sortableProcedimentos = [...procedimentos];
+    if (sortConfig.key) {
+      sortableProcedimentos.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableProcedimentos;
+  }, [procedimentos, sortConfig]);
+
+  const filteredProcedimentos = sortedProcedimentos.filter(procedimento =>
     procedimento.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd 'de' MMMM, yyyy", { locale: ptBR });
+    } catch (error) {
+      return dateString;
+    }
+  };
 
   return (
     <div className="container mx-auto py-6">
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Gerenciar Procedimentos</h1>
         <div className="flex items-center gap-4 w-full md:w-auto">
-          <Input
-            placeholder="Buscar procedimento..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-64"
-          />
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Buscar procedimento..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           <Button onClick={handleCreateProcedimento}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Novo Procedimento
@@ -100,48 +151,67 @@ const ProcedimentosPage = () => {
 
       {isLoading ? (
         <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-hubbpet-primary"></div>
+          <Loader2 className="h-8 w-8 animate-spin text-hubbpet-primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProcedimentos.length === 0 ? (
-            <p className="text-gray-500 col-span-full text-center py-8">
-              {searchTerm ? 'Nenhum procedimento encontrado para esta busca.' : 'Nenhum procedimento cadastrado.'}
-            </p>
-          ) : (
-            filteredProcedimentos.map((procedimento) => (
-              <Card key={procedimento.id} className="shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg font-semibold">{procedimento.nome}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 text-sm mb-4">
-                    {procedimento.descricao || 'Sem descrição'}
-                  </p>
-                  <div className="flex justify-end gap-2 mt-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-8"
-                      onClick={() => handleEditProcedimento(procedimento)}
-                    >
-                      <Pencil className="h-4 w-4 mr-1" />
-                      Editar
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      className="h-8"
-                      onClick={() => handleDeleteClick(procedimento)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Remover
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead onClick={() => requestSort('nome')} className="cursor-pointer">
+                  Nome
+                  <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                </TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead onClick={() => requestSort('created_at')} className="cursor-pointer">
+                  Cadastrado em
+                  <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                </TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProcedimentos.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-6 text-gray-500">
+                    {searchTerm ? 'Nenhum procedimento encontrado para esta busca.' : 'Nenhum procedimento cadastrado.'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredProcedimentos.map((procedimento) => (
+                  <TableRow key={procedimento.id}>
+                    <TableCell className="font-medium">{procedimento.nome}</TableCell>
+                    <TableCell className="max-w-md truncate">
+                      {procedimento.descricao || 'Sem descrição'}
+                    </TableCell>
+                    <TableCell>{formatDate(procedimento.created_at)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8"
+                          onClick={() => handleEditProcedimento(procedimento)}
+                        >
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          className="h-8"
+                          onClick={() => handleDeleteClick(procedimento)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Remover
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
       )}
 
