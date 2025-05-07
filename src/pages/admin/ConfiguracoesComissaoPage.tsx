@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface Servico {
@@ -57,12 +58,14 @@ const ConfiguracoesComissaoPage = () => {
       if (error) throw error;
       return data;
     },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao carregar comissões",
-        description: error.message || "Não foi possível carregar as configurações de comissão.",
-        variant: "destructive"
-      });
+    meta: {
+      onError: (error: any) => {
+        toast({
+          title: "Erro ao carregar comissões",
+          description: error.message || "Não foi possível carregar as configurações de comissão.",
+          variant: "destructive"
+        });
+      }
     }
   });
 
