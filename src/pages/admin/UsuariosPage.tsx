@@ -55,8 +55,14 @@ const UsuariosPage = () => {
       console.log("Usuários obtidos via função RPC:", data);
       
       if (data && data.length > 0) {
-        setUsuarios(data);
-        setFilteredUsuarios(data);
+        // Converter o tipo de role para o enum esperado pelo tipo Usuario
+        const usuariosData: Usuario[] = data.map(user => ({
+          ...user,
+          role: convertToUserRole(user.role)
+        }));
+        
+        setUsuarios(usuariosData);
+        setFilteredUsuarios(usuariosData);
       } else {
         console.log("Nenhum usuário encontrado via RPC");
         // Caso não encontre usuários via RPC, tentar o método alternativo
@@ -74,6 +80,20 @@ const UsuariosPage = () => {
       fetchUsuariosFromTables();
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Função auxiliar para converter a string de role para o tipo esperado
+  const convertToUserRole = (role: string): 'tutor' | 'veterinary' | 'admin' => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return 'admin';
+      case 'veterinary':
+      case 'veterinario':
+        return 'veterinary';
+      case 'tutor':
+      default:
+        return 'tutor';
     }
   };
   
@@ -111,7 +131,7 @@ const UsuariosPage = () => {
           id: tutor.id,
           email: tutor.email,
           nome: tutor.nome,
-          role: role as 'tutor' | 'veterinary' | 'admin',
+          role: convertToUserRole(role),
           created_at: tutor.created_at,
           telefone: tutor.telefone
         });
@@ -124,7 +144,7 @@ const UsuariosPage = () => {
           id: vet.id,
           email: vet.email,
           nome: vet.nome_completo,
-          role: role as 'tutor' | 'veterinary' | 'admin',
+          role: convertToUserRole(role),
           created_at: vet.created_at,
           telefone: vet.telefone
         });
