@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Home, Search, Calendar, User, Settings } from "lucide-react";
+import { Home, Calendar, Settings, User, Search } from "lucide-react";
 import SidebarWrapper from './SidebarWrapper';
 import SidebarItem from './SidebarItem';
 
 const TutorSidebar = () => {
   const location = useLocation();
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleSidebar = () => {
     setIsExpanded(!isExpanded);

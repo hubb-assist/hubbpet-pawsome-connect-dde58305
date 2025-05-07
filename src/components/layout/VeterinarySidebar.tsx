@@ -7,7 +7,7 @@ import SidebarItem from './SidebarItem';
 
 const VeterinarySidebar = () => {
   const location = useLocation();
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleSidebar = () => {
     setIsExpanded(!isExpanded);

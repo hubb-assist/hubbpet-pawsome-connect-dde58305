@@ -17,13 +17,17 @@ const SidebarItem = ({ icon: Icon, title, href, isActive = false, isExpanded }: 
     <Link
       to={href}
       className={cn(
-        "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "flex items-center justify-center w-full py-4",
         isActive ? "bg-sidebar-accent text-white" : "text-white hover:bg-sidebar-accent hover:text-white",
-        !isExpanded && "justify-center px-2"
+        isExpanded ? "px-6" : "px-0"
       )}
     >
-      <Icon className={cn("h-5 w-5", isExpanded && "mr-2")} />
-      {isExpanded && <span>{title}</span>}
+      <div className={cn("flex items-center", isExpanded ? "w-full" : "w-auto")}>
+        <div className="flex justify-center items-center w-8">
+          <Icon className="h-5 w-5" />
+        </div>
+        {isExpanded && <span className="ml-3">{title}</span>}
+      </div>
     </Link>
   );
 };
