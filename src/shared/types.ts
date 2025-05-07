@@ -1,3 +1,4 @@
+
 export type AuthState = {
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -35,4 +36,13 @@ export type Procedimento = {
   nome: string;
   descricao: string | null;
   created_at: string;
+};
+
+export type Usuario = {
+  id: string;
+  email: string;
+  nome: string;
+  role: 'tutor' | 'veterinary' | 'admin';
+  created_at: string;
+  telefone?: string;
 };

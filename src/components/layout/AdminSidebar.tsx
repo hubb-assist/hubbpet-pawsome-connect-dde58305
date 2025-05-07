@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { 
   Home, 
   User, 
+  Users,
   Settings, 
   Shield, 
   UserCheck, 
@@ -25,6 +26,7 @@ const AdminSidebar = () => {
 
   const menuItems = [
     { icon: Home, title: 'Dashboard', href: '/admin' },
+    { icon: Users, title: 'Usuários', href: '/admin/usuarios' },
     { icon: UserCheck, title: 'Aprovação Veterinários', href: '/admin/veterinarios' },
     { icon: List, title: 'Procedimentos', href: '/admin/procedimentos' },
     { icon: MessageSquare, title: 'Mediação de Conflitos', href: '/admin/conflitos' },

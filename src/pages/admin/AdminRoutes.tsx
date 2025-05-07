@@ -6,6 +6,7 @@ import AprovacaoVeterinariosPage from './AprovacaoVeterinariosPage';
 import MediacaoConflitosPage from './MediacaoConflitosPage';
 import ConfiguracoesComissaoPage from './ConfiguracoesComissaoPage';
 import ProcedimentosPage from './ProcedimentosPage';
+import UsuariosPage from './UsuariosPage';
 
 const AdminRoutes: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ const AdminRoutes: React.FC = () => {
       <Route path="/conflitos" element={<MediacaoConflitosPage />} />
       <Route path="/comissoes" element={<ConfiguracoesComissaoPage />} />
       <Route path="/procedimentos" element={<ProcedimentosPage />} />
+      <Route path="/usuarios" element={<UsuariosPage />} />
     </Routes>
   );
 };
