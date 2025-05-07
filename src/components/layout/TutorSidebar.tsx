@@ -9,6 +9,10 @@ const TutorSidebar = () => {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
 
+  const toggleSidebar = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   const menuItems = [
     { icon: Home, title: 'Dashboard', href: '/tutor' },
     { icon: Search, title: 'Encontrar Veterinários', href: '/tutor/search' },
@@ -18,7 +22,7 @@ const TutorSidebar = () => {
   ];
 
   return (
-    <SidebarWrapper>
+    <SidebarWrapper isExpanded={isExpanded} toggleSidebar={toggleSidebar}>
       {menuItems.map((item) => (
         <SidebarItem
           key={item.href}

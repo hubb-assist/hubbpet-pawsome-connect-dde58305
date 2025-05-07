@@ -17,9 +17,9 @@ const SidebarItem = ({ icon: Icon, title, href, isActive = false, isExpanded }: 
     <Link
       to={href}
       className={cn(
-        "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
-        isActive ? "bg-sidebar-accent text-white" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
-        !isExpanded ? "justify-center" : ""
+        "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        isActive ? "bg-sidebar-accent text-white" : "text-white hover:bg-sidebar-accent hover:text-white",
+        !isExpanded && "justify-center px-2"
       )}
     >
       <Icon className={cn("h-5 w-5", isExpanded && "mr-2")} />

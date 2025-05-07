@@ -9,6 +9,10 @@ const AdminSidebar = () => {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
 
+  const toggleSidebar = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   const menuItems = [
     { icon: Home, title: 'Dashboard', href: '/admin' },
     { icon: User, title: 'Veterinários', href: '/admin/veterinaries' },
@@ -17,7 +21,7 @@ const AdminSidebar = () => {
   ];
 
   return (
-    <SidebarWrapper>
+    <SidebarWrapper isExpanded={isExpanded} toggleSidebar={toggleSidebar}>
       {menuItems.map((item) => (
         <SidebarItem
           key={item.href}

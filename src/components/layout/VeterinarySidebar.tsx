@@ -9,6 +9,10 @@ const VeterinarySidebar = () => {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
 
+  const toggleSidebar = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   const menuItems = [
     { icon: Home, title: 'Dashboard', href: '/vet' },
     { icon: Calendar, title: 'Agenda', href: '/vet/agenda' },
@@ -18,7 +22,7 @@ const VeterinarySidebar = () => {
   ];
 
   return (
-    <SidebarWrapper>
+    <SidebarWrapper isExpanded={isExpanded} toggleSidebar={toggleSidebar}>
       {menuItems.map((item) => (
         <SidebarItem
           key={item.href}
