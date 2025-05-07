@@ -9,6 +9,8 @@ import EscolherPerfilPage from '@/pages/auth/EscolherPerfilPage';
 import RegistroVeterinarioPage from '@/pages/auth/RegistroVeterinarioPage';
 import VeterinarioDashboard from '@/pages/veterinario/VeterinarioDashboard';
 import TutorDashboard from '@/pages/tutor/TutorDashboard';
+import TutorProfilePage from '@/pages/tutor/TutorProfilePage';
+import PetsPage from '@/pages/tutor/PetsPage';
 import NotFound from '@/pages/NotFound';
 import AppLayout from '@/components/layout/AppLayout';
 import AdminRoutes from '@/pages/admin/AdminRoutes';
@@ -81,6 +83,8 @@ const App = () => {
                 <AppLayout userRole="tutor">
                   <Routes>
                     <Route path="/" element={<TutorDashboard />} />
+                    <Route path="/perfil" element={<TutorProfilePage />} />
+                    <Route path="/pets" element={<PetsPage />} />
                   </Routes>
                 </AppLayout>
               </ProtectedRoute>

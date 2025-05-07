@@ -41,7 +41,7 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
           ) : (
             <>
               <div className="icon-container">
-                <img src={iconUrl} alt="HubbPet Icon" className="max-h-10" /> {/* Aumentando o tamanho do logo quando colapsado */}
+                <img src={iconUrl} alt="HubbPet Icon" className="max-h-14 w-14" /> {/* Aumentando significativamente o tamanho do logo quando colapsado */}
               </div>
               <Button 
                 variant="ghost" 

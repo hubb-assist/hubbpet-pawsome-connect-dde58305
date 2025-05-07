@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Home, Calendar, Settings, User, Search } from "lucide-react";
+import { Home, Calendar, Settings, User, Search, PawPrint } from "lucide-react";
 import SidebarWrapper from './SidebarWrapper';
 import SidebarItem from './SidebarItem';
 
@@ -16,8 +16,9 @@ const TutorSidebar = () => {
   const menuItems = [
     { icon: Home, title: 'Dashboard', href: '/tutor' },
     { icon: Search, title: 'Encontrar Veterinários', href: '/tutor/search' },
+    { icon: PawPrint, title: 'Meus Pets', href: '/tutor/pets' },
     { icon: Calendar, title: 'Meus Agendamentos', href: '/tutor/appointments' },
-    { icon: User, title: 'Meus Pets', href: '/tutor/pets' },
+    { icon: User, title: 'Meu Perfil', href: '/tutor/perfil' },
     { icon: Settings, title: 'Configurações', href: '/tutor/settings' },
   ];
 

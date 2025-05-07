@@ -1,0 +1,190 @@
+
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus, Edit, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { Pet } from '@/domain/models/User';
+import PetFormDialog from '@/components/tutor/PetFormDialog';
+import DeleteConfirmationDialog from '@/components/tutor/DeleteConfirmationDialog';
+
+const PetsPage = () => {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [currentPet, setCurrentPet] = useState<Pet | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchPets();
+    }
+  }, [user]);
+
+  const fetchPets = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('pets')
+        .select('*')
+        .eq('tutor_id', user.id)
+        .order('nome', { ascending: true });
+      
+      if (error) throw error;
+      
+      setPets(data || []);
+    } catch (error: any) {
+      console.error('Erro ao buscar pets:', error.message);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar seus pets.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditPet = (pet: Pet) => {
+    setCurrentPet(pet);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeletePet = (pet: Pet) => {
+    setCurrentPet(pet);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const deletePet = async () => {
+    if (!currentPet) return;
+    
+    try {
+      const { error } = await supabase
+        .from('pets')
+        .delete()
+        .eq('id', currentPet.id);
+        
+      if (error) throw error;
+        
+      setPets(pets.filter(pet => pet.id !== currentPet.id));
+      toast({
+        title: "Pet removido",
+        description: `${currentPet.name} foi removido com sucesso.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover pet",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setCurrentPet(null);
+    }
+  };
+
+  const petTypeLabel = (type: string) => {
+    const types: Record<string, string> = {
+      'dog': 'Cachorro',
+      'cat': 'Gato',
+      'bird': 'Pássaro',
+      'reptile': 'Réptil',
+      'other': 'Outro'
+    };
+    return types[type] || type;
+  };
+
+  return (
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Meus Pets</h1>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Adicionar Pet
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">Carregando pets...</div>
+        </div>
+      ) : pets.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {pets.map((pet) => (
+            <Card key={pet.id}>
+              <CardHeader>
+                <CardTitle>{pet.name}</CardTitle>
+                <CardDescription>{petTypeLabel(pet.type)} • {pet.breed || 'Raça não especificada'}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {pet.birthdate && (
+                    <p className="text-sm">
+                      Data de Nascimento: {new Date(pet.birthdate).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-end space-x-2">
+                <Button variant="outline" size="sm" onClick={() => handleEditPet(pet)}>
+                  <Edit className="h-4 w-4 mr-1" /> Editar
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => handleDeletePet(pet)}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Remover
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground mb-4">Você ainda não cadastrou nenhum pet.</p>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Adicionar Seu Primeiro Pet
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <PetFormDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onSaved={fetchPets}
+      />
+
+      {currentPet && (
+        <>
+          <PetFormDialog
+            open={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+            pet={currentPet}
+            onSaved={fetchPets}
+          />
+
+          <DeleteConfirmationDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            onConfirm={deletePet}
+            title={`Remover ${currentPet.name}`}
+            description={`Tem certeza que deseja remover ${currentPet.name}? Esta ação não poderá ser desfeita.`}
+          />
+        </>
+      )}
+    </div>
+  );
+};
+
+export default PetsPage;
