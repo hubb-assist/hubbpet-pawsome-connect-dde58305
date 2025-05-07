@@ -22,27 +22,37 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
     )}>
       <div className="flex flex-col items-center">
         <div className={cn("flex items-center w-full py-4",
-          isExpanded ? "justify-start px-6" : "justify-center"
+          isExpanded ? "justify-between px-6" : "justify-center"
         )}>
           {isExpanded ? (
-            <div className="logo-container">
-              <img src={logoUrl} alt="HubbPet" className="max-h-8" />
-            </div>
+            <>
+              <div className="logo-container">
+                <img src={logoUrl} alt="HubbPet" className="max-h-8" />
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleSidebar} 
+                className="text-white hover:bg-sidebar-accent h-8 w-8 p-0"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </>
           ) : (
-            <div className="icon-container flex justify-center">
-              <img src={iconUrl} alt="HubbPet Icon" className="max-h-8" />
-            </div>
+            <>
+              <div className="icon-container flex justify-center">
+                <img src={iconUrl} alt="HubbPet Icon" className="max-h-8" />
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleSidebar} 
+                className="absolute top-4 right-2 text-white hover:bg-sidebar-accent h-8 w-8 p-0"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </>
           )}
-        </div>
-        <div className="w-full flex justify-center py-2 border-b border-sidebar-accent">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleSidebar} 
-            className="text-white hover:bg-sidebar-accent h-8 w-8 p-0"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
         </div>
       </div>
       <div className="mt-2 flex flex-col items-center space-y-1">

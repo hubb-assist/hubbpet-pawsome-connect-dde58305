@@ -56,12 +56,12 @@ const NavbarWithLogout: React.FC = () => {
   };
 
   return (
-    <div className="flex justify-end items-center p-4 bg-[#2D113F] text-white">      
+    <div className="flex justify-end items-center p-4 bg-[#E72A4A] text-white">      
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
             variant="ghost" 
-            className="flex items-center gap-2 text-white hover:bg-[#3D2150]"
+            className="flex items-center gap-2 text-white hover:bg-[#d02643]"
           >
             <User size={18} />
             <span className="hidden sm:inline">{user?.email}</span>
