@@ -38,9 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const location = useLocation();
 
   useEffect(() => {
+    console.log("AuthProvider inicializado");
+    
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log("Evento de autenticação:", event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
@@ -58,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Verificar sessão atual ao iniciar
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Sessão atual recuperada:", currentSession ? "Existe" : "Não existe");
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
@@ -76,12 +80,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Recuperar o papel do usuário do Supabase
   const fetchUserRole = async (userId: string) => {
     try {
+      console.log("Buscando papel do usuário:", userId);
       const { data, error } = await supabase
         .rpc('get_user_role', { user_id: userId });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar papel:", error);
+        throw error;
+      }
       
       const userRole = data as UserRole;
+      console.log("Papel do usuário encontrado:", userRole);
       setUserRole(userRole);
       
       // Redirecionar com base no papel, exceto se já estiver em uma rota apropriada
@@ -111,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const redirectBasedOnRole = (userRole: UserRole) => {
+    console.log("Redirecionando com base no papel:", userRole);
     switch (userRole) {
       case 'admin':
         navigate('/admin');
@@ -129,13 +139,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      console.log("Iniciando login para:", email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro durante login:", error);
+        throw error;
+      }
       
+      console.log("Login bem-sucedido para:", email);
       toast({
         title: "Login realizado",
         description: "Você está conectado com sucesso!"
@@ -145,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchUserRole(data.user.id);
       }
     } catch (error: any) {
+      console.error("Erro capturado durante login:", error);
       toast({
         title: "Erro no login",
         description: error.message || "Ocorreu um erro durante o login.",
@@ -159,6 +176,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, name: string, roleType: string) => {
     try {
       setIsLoading(true);
+      console.log("Iniciando cadastro para:", email);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -170,13 +189,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro durante cadastro:", error);
+        throw error;
+      }
       
+      console.log("Cadastro bem-sucedido para:", email);
       toast({
         title: "Cadastro realizado",
         description: "Sua conta foi criada com sucesso!"
       });
     } catch (error: any) {
+      console.error("Erro capturado durante cadastro:", error);
       toast({
         title: "Erro no cadastro",
         description: error.message || "Ocorreu um erro durante o cadastro.",
@@ -191,13 +215,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       setIsLoading(true);
+      console.log("Iniciando logout");
+      
       await supabase.auth.signOut();
+      
+      console.log("Logout bem-sucedido");
       toast({
         title: "Logout realizado",
         description: "Você foi desconectado com sucesso."
       });
       navigate('/auth');
     } catch (error: any) {
+      console.error("Erro durante logout:", error);
       toast({
         title: "Erro no logout",
         description: error.message || "Ocorreu um erro durante o logout.",
@@ -211,6 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setRole = async (newRole: UserRole) => {
     try {
       if (!user) throw new Error("Usuário não autenticado");
+      console.log("Definindo papel do usuário para:", newRole);
       
       // Ao escolher um perfil, salvamos como metadata no usuário
       const { error } = await supabase.auth.updateUser({
@@ -227,6 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       redirectBasedOnRole(newRole);
     } catch (error: any) {
+      console.error("Erro ao definir perfil:", error);
       toast({
         title: "Erro ao definir perfil",
         description: error.message || "Não foi possível definir seu perfil.",

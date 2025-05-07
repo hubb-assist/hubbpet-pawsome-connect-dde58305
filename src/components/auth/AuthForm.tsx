@@ -90,14 +90,22 @@ export default function AuthForm() {
     setNeedsEmailConfirmation(false);
     
     try {
+      console.log("Tentando fazer login com:", data.email);
       await signIn(data.email, data.password);
+      console.log("Login bem-sucedido");
     } catch (error: any) {
-      if (error.message.includes("Email not confirmed") || error.message.includes("confirmation")) {
+      console.error("Erro no login:", error);
+      
+      if (error.message && (error.message.includes("Email not confirmed") || error.message.includes("confirmation"))) {
         setNeedsEmailConfirmation(true);
         setEmailForResend(data.email);
         setError("É necessário confirmar seu e-mail antes de fazer login. Verifique sua caixa de entrada.");
+      } else if (error.message && error.message.includes("Invalid login")) {
+        setError("Email ou senha incorretos. Por favor, tente novamente.");
+      } else if (error.message && error.message.includes("rate limit")) {
+        setError("Muitas tentativas de login. Por favor, tente novamente mais tarde.");
       } else {
-        setError(error.message || "Erro ao fazer login");
+        setError(error.message || "Erro ao fazer login. Por favor, tente novamente.");
       }
     } finally {
       setIsSubmitting(false);
@@ -109,6 +117,7 @@ export default function AuthForm() {
     setError(null);
     
     try {
+      console.log("Tentando registrar com:", data.email);
       await signUp(data.email, data.password, data.name, data.role);
       setAuthMode("login");
       setNeedsEmailConfirmation(true);
@@ -120,7 +129,13 @@ export default function AuthForm() {
       
       registerForm.reset();
     } catch (error: any) {
-      setError(error.message || "Erro ao fazer cadastro");
+      console.error("Erro no registro:", error);
+      
+      if (error.message && error.message.includes("already registered")) {
+        setError("Este e-mail já está registrado. Por favor, faça login ou use outro e-mail.");
+      } else {
+        setError(error.message || "Erro ao fazer cadastro. Por favor, tente novamente.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -132,6 +147,7 @@ export default function AuthForm() {
     setIsResending(true);
     
     try {
+      console.log("Reenviando e-mail para:", emailForResend);
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: emailForResend,
@@ -144,6 +160,7 @@ export default function AuthForm() {
         description: "Um novo e-mail de confirmação foi enviado. Por favor, verifique sua caixa de entrada.",
       });
     } catch (error: any) {
+      console.error("Erro ao reenviar e-mail:", error);
       toast({
         title: "Erro ao enviar e-mail",
         description: error.message || "Ocorreu um erro ao enviar o e-mail de confirmação.",
@@ -151,6 +168,21 @@ export default function AuthForm() {
       });
     } finally {
       setIsResending(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      await signIn("luis@admin.hubbpet.com", "adminhubb2023");
+      console.log("Login com conta de demonstração bem-sucedido");
+    } catch (error: any) {
+      console.error("Erro no login com conta de demonstração:", error);
+      setError("Erro ao fazer login com conta de demonstração. Por favor, tente novamente.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -215,7 +247,7 @@ export default function AuthForm() {
                     <FormItem>
                       <FormLabel>E-mail</FormLabel>
                       <FormControl>
-                        <Input placeholder="seu@email.com" {...field} />
+                        <Input placeholder="seu@email.com" {...field} autoComplete="email" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -228,7 +260,7 @@ export default function AuthForm() {
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="********" {...field} />
+                        <Input type="password" placeholder="********" {...field} autoComplete="current-password" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -241,6 +273,26 @@ export default function AuthForm() {
                 >
                   {isSubmitting ? "Entrando..." : "Entrar"}
                 </Button>
+                
+                <div className="text-center">
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">ou</span>
+                    </div>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleDemoLogin}
+                    disabled={isSubmitting}
+                  >
+                    Entrar com conta de demonstração
+                  </Button>
+                </div>
               </form>
             </Form>
           </TabsContent>
@@ -255,7 +307,7 @@ export default function AuthForm() {
                     <FormItem>
                       <FormLabel>Nome completo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Seu nome completo" {...field} />
+                        <Input placeholder="Seu nome completo" {...field} autoComplete="name" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -268,7 +320,7 @@ export default function AuthForm() {
                     <FormItem>
                       <FormLabel>E-mail</FormLabel>
                       <FormControl>
-                        <Input placeholder="seu@email.com" {...field} />
+                        <Input placeholder="seu@email.com" {...field} autoComplete="email" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -281,7 +333,7 @@ export default function AuthForm() {
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="********" {...field} />
+                        <Input type="password" placeholder="********" {...field} autoComplete="new-password" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -294,7 +346,7 @@ export default function AuthForm() {
                     <FormItem>
                       <FormLabel>Confirmar senha</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="********" {...field} />
+                        <Input type="password" placeholder="********" {...field} autoComplete="new-password" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
