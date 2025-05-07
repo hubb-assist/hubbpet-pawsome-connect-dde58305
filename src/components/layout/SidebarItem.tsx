@@ -22,11 +22,15 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
     if (!isExpanded && onExpandClick) {
       onExpandClick();
       return;
     }
+    
+    console.log(`Navegando para: ${href}`);
     navigate(href);
   };
 
