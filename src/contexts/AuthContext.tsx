@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -121,19 +120,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const redirectBasedOnRole = (userRole: UserRole) => {
     console.log("Redirecionando com base no papel:", userRole);
-    switch (userRole) {
-      case 'admin':
-        navigate('/admin');
-        break;
-      case 'veterinario':
-        navigate('/vet');
-        break;
-      case 'tutor':
-        navigate('/tutor');
-        break;
-      default:
-        navigate('/escolher-perfil');
-    }
+    
+    // Garantindo que o redirecionamento aconteça após um pequeno delay
+    // para evitar problemas de timing com a atualização do estado
+    setTimeout(() => {
+      switch (userRole) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'veterinario':
+          navigate('/vet');
+          break;
+        case 'tutor':
+          navigate('/tutor');
+          break;
+        default:
+          navigate('/escolher-perfil');
+      }
+    }, 100);
   };
 
   const signIn = async (email: string, password: string) => {
@@ -157,8 +161,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Você está conectado com sucesso!"
       });
       
-      if (data.user && !role) {
-        await fetchUserRole(data.user.id);
+      if (data.user) {
+        console.log("Usuário autenticado, buscando papel...");
+        const userId = data.user.id;
+        await fetchUserRole(userId);
+        
+        // Garantir que o redirecionamento aconteça após obter o papel
+        if (data.user && data.session) {
+          const { data: roleData } = await supabase.rpc('get_user_role', { 
+            user_id: userId 
+          });
+          
+          if (roleData) {
+            console.log("Redirecionando após login com papel:", roleData);
+            redirectBasedOnRole(roleData as UserRole);
+          }
+        }
       }
     } catch (error: any) {
       console.error("Erro capturado durante login:", error);

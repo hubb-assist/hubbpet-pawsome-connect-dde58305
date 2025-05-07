@@ -17,22 +17,52 @@ import AdminRoutes from '@/pages/admin/AdminRoutes';
 import VeterinarioPerfilPage from '@/pages/veterinario/VeterinarioProfilePage';
 import AgendaPage from '@/pages/veterinario/AgendaPage';
 import AguardandoAprovacaoPage from '@/pages/auth/AguardandoAprovacaoPage';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const ProtectedRoute = ({ children, userRole }: { children: React.ReactNode; userRole: string }) => {
   const { user, role, isLoading } = useAuth();
 
+  // Mostrando um indicador de carregamento enquanto verificamos a autenticação
   if (isLoading) {
-    return <div>Carregando...</div>;
+    return <LoadingScreen />;
   }
 
+  // Redirecionando para a página de login se o usuário não estiver autenticado
   if (!user) {
-    return <Navigate to="/auth" />;
+    console.log("Usuário não autenticado, redirecionando para /auth");
+    return <Navigate to="/auth" replace />;
   }
 
+  // Redirecionando para a página de escolha de perfil se o usuário não tiver um papel definido
+  if (!role) {
+    console.log("Usuário sem papel definido, redirecionando para /escolher-perfil");
+    return <Navigate to="/escolher-perfil" replace />;
+  }
+
+  // Verificando se o usuário tem o papel necessário para acessar a rota
   if (role !== userRole) {
-    return <div>Acesso negado.</div>;
+    console.log(`Acesso negado. Papel atual: ${role}, Papel necessário: ${userRole}`);
+    
+    // Redirecionando para a dashboard apropriada com base no papel do usuário
+    switch (role) {
+      case 'admin':
+        return <Navigate to="/admin" replace />;
+      case 'veterinario':
+        return <Navigate to="/vet" replace />;
+      case 'tutor':
+        return <Navigate to="/tutor" replace />;
+      default:
+        return <Navigate to="/auth" replace />;
+    }
   }
 
   return <>{children}</>;

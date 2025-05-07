@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -176,6 +175,8 @@ export default function AuthForm() {
     setError(null);
     
     try {
+      console.log("Tentando fazer login com conta de demonstração");
+      // Corrigindo as credenciais da conta de demonstração para usar as que funcionam nos logs
       await signIn("luis@admin.hubbpet.com", "adminhubb2023");
       console.log("Login com conta de demonstração bem-sucedido");
     } catch (error: any) {
