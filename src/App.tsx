@@ -1,90 +1,95 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import Index from '@/pages/Index';
+import AuthPage from '@/pages/auth/AuthPage';
+import EscolherPerfilPage from '@/pages/auth/EscolherPerfilPage';
+import RegistroVeterinarioPage from '@/pages/auth/RegistroVeterinarioPage';
+import VeterinarioDashboard from '@/pages/veterinario/VeterinarioDashboard';
+import TutorDashboard from '@/pages/tutor/TutorDashboard';
+import NotFound from '@/pages/NotFound';
+import AppLayout from '@/components/layout/AppLayout';
+import AdminRoutes from '@/pages/admin/AdminRoutes';
+import VeterinarioPerfilPage from '@/pages/veterinario/VeterinarioProfilePage';
+import AgendaPage from '@/pages/veterinario/AgendaPage';
+import AguardandoAprovacaoPage from '@/pages/auth/AguardandoAprovacaoPage';
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "./contexts/AuthContext";
+const queryClient = new QueryClient();
 
-// Pages
-import LandingPage from "./pages/landing/LandingPage";
-import AuthPage from "./pages/auth/AuthPage";
-import NotFound from "./pages/NotFound";
-import TutorDashboard from "./pages/tutor/TutorDashboard";
-import VeterinarioDashboard from "./pages/veterinario/VeterinarioDashboard";
-import VeterinarioPerfilPage from "./pages/veterinario/VeterinarioPerfilPage";
-import AgendaPage from "./pages/veterinario/AgendaPage";
-import AguardandoAprovacaoPage from "./pages/veterinario/AguardandoAprovacaoPage";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import EscolherPerfilPage from "./pages/auth/EscolherPerfilPage";
-import RegistroVeterinarioPage from "./pages/auth/RegistroVeterinarioPage";
-import AppLayout from "./components/layout/AppLayout";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+const ProtectedRoute = ({ children, userRole }: { children: React.ReactNode; userRole: string }) => {
+  const { user, role, isLoading } = useAuth();
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minuto
-      refetchOnWindowFocus: false
-    }
+  if (isLoading) {
+    return <div>Carregando...</div>;
   }
-});
+
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
+
+  if (role !== userRole) {
+    return <div>Acesso negado.</div>;
+  }
+
+  return children;
+};
 
 const App = () => {
   return (
-    <BrowserRouter>
+    <AuthProvider>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              {/* Rotas públicas */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/escolher-perfil" element={<EscolherPerfilPage />} />
-              <Route path="/registro-veterinario" element={<RegistroVeterinarioPage />} />
-              <Route path="/vet/aguardando-aprovacao" element={<AguardandoAprovacaoPage />} />
-              
-              {/* Rotas de tutor */}
-              <Route path="/tutor" element={
-                <ProtectedRoute allowedRoles={['tutor']}>
-                  <AppLayout userRole="tutor" />
-                </ProtectedRoute>
-              }>
-                <Route index element={<TutorDashboard />} />
-                {/* Adicione outras rotas de tutor aqui */}
-              </Route>
-              
-              {/* Rotas de veterinário */}
-              <Route path="/vet" element={
-                <ProtectedRoute allowedRoles={['veterinario']}>
-                  <AppLayout userRole="veterinary" />
-                </ProtectedRoute>
-              }>
-                <Route index element={<VeterinarioDashboard />} />
-                <Route path="perfil" element={<VeterinarioPerfilPage />} />
-                <Route path="agenda" element={<AgendaPage />} />
-                {/* Adicione outras rotas de veterinário aqui */}
-              </Route>
-              
-              {/* Rotas de admin */}
-              <Route path="/admin" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AppLayout userRole="admin" />
-                </ProtectedRoute>
-              }>
-                <Route index element={<AdminDashboard />} />
-                {/* Adicione outras rotas de admin aqui */}
-              </Route>
-              
-              {/* Rota 404 para capturar URLs inexistentes */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </TooltipProvider>
+        <Routes>
+          <Route path="/" element={<Index />} />
+
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/escolher-perfil" element={<EscolherPerfilPage />} />
+          <Route path="/veterinario/registro" element={<RegistroVeterinarioPage />} />
+          <Route path="/vet/aguardando-aprovacao" element={<AguardandoAprovacaoPage />} />
+
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute userRole="admin">
+                <AppLayout userRole="admin">
+                  <AdminRoutes />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/vet/*"
+            element={
+              <ProtectedRoute userRole="veterinario">
+                <AppLayout userRole="veterinary">
+                  <Routes>
+                    <Route path="/" element={<VeterinarioDashboard />} />
+                    <Route path="/agenda" element={<AgendaPage />} />
+                    <Route path="/perfil" element={<VeterinarioPerfilPage />} />
+                  </Routes>
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/tutor/*"
+            element={
+              <ProtectedRoute userRole="tutor">
+                <AppLayout userRole="tutor">
+                  <Routes>
+                    <Route path="/" element={<TutorDashboard />} />
+                  </Routes>
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </QueryClientProvider>
-    </BrowserRouter>
+    </AuthProvider>
   );
 };
 

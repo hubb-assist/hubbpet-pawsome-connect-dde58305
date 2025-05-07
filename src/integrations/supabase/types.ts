@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_configuracoes: {
+        Row: {
+          comissao_padrao: number
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          comissao_padrao?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          comissao_padrao?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       agendamentos: {
         Row: {
           avaliacao_comentario: string | null
@@ -86,6 +107,114 @@ export type Database = {
           },
         ]
       }
+      comissoes_servicos: {
+        Row: {
+          created_at: string | null
+          fixa: boolean
+          id: string
+          percentual: number
+          servico_id: string | null
+          updated_at: string | null
+          valor_fixo: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          fixa?: boolean
+          id?: string
+          percentual: number
+          servico_id?: string | null
+          updated_at?: string | null
+          valor_fixo?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          fixa?: boolean
+          id?: string
+          percentual?: number
+          servico_id?: string | null
+          updated_at?: string | null
+          valor_fixo?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_servicos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conflitos: {
+        Row: {
+          agendamento_id: string
+          created_at: string | null
+          descricao: string
+          estorno_aprovado: boolean | null
+          estorno_solicitado: boolean
+          id: string
+          resolvido: boolean
+          status: string
+          titulo: string
+          tutor_id: string
+          updated_at: string | null
+          valor_estorno: number | null
+          veterinario_id: string
+        }
+        Insert: {
+          agendamento_id: string
+          created_at?: string | null
+          descricao: string
+          estorno_aprovado?: boolean | null
+          estorno_solicitado?: boolean
+          id?: string
+          resolvido?: boolean
+          status?: string
+          titulo: string
+          tutor_id: string
+          updated_at?: string | null
+          valor_estorno?: number | null
+          veterinario_id: string
+        }
+        Update: {
+          agendamento_id?: string
+          created_at?: string | null
+          descricao?: string
+          estorno_aprovado?: boolean | null
+          estorno_solicitado?: boolean
+          id?: string
+          resolvido?: boolean
+          status?: string
+          titulo?: string
+          tutor_id?: string
+          updated_at?: string | null
+          valor_estorno?: number | null
+          veterinario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conflitos_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conflitos_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conflitos_veterinario_id_fkey"
+            columns: ["veterinario_id"]
+            isOneToOne: false
+            referencedRelation: "veterinarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disponibilidade_veterinario: {
         Row: {
           created_at: string | null
@@ -123,6 +252,41 @@ export type Database = {
             columns: ["veterinario_id"]
             isOneToOne: false
             referencedRelation: "veterinarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mensagens_conflitos: {
+        Row: {
+          conflito_id: string
+          created_at: string | null
+          id: string
+          mensagem: string
+          tipo_usuario: string
+          user_id: string
+        }
+        Insert: {
+          conflito_id: string
+          created_at?: string | null
+          id?: string
+          mensagem: string
+          tipo_usuario: string
+          user_id: string
+        }
+        Update: {
+          conflito_id?: string
+          created_at?: string | null
+          id?: string
+          mensagem?: string
+          tipo_usuario?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensagens_conflitos_conflito_id_fkey"
+            columns: ["conflito_id"]
+            isOneToOne: false
+            referencedRelation: "conflitos"
             referencedColumns: ["id"]
           },
         ]
