@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Home, User, Calendar, Settings, Shield, UserCheck, HelpCircle } from "lucide-react";
+import { Home, User, Calendar, Settings, Shield, UserCheck, HelpCircle, List } from "lucide-react";
 import SidebarWrapper from './SidebarWrapper';
 import SidebarItem from './SidebarItem';
 
@@ -17,6 +17,7 @@ const AdminSidebar = () => {
     { icon: Home, title: 'Dashboard', href: '/admin' },
     { icon: UserCheck, title: 'Aprovação Veterinários', href: '/admin/veterinarios' },
     { icon: Calendar, title: 'Agendamentos', href: '/admin/appointments' },
+    { icon: List, title: 'Procedimentos', href: '/admin/procedimentos' },
     { icon: User, title: 'Usuários', href: '/admin/users' },
     { icon: HelpCircle, title: 'Suporte e Conflitos', href: '/admin/support' },
     { icon: Shield, title: 'Comissões', href: '/admin/commissions' },

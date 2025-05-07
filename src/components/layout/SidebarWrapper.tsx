@@ -24,35 +24,21 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
         <div className={cn("flex items-center w-full py-4",
           isExpanded ? "justify-between px-6" : "justify-between px-4"
         )}>
-          {isExpanded ? (
-            <>
-              <div className="logo-container">
-                <img src={logoUrl} alt="HubbPet" className="max-h-8" />
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={toggleSidebar} 
-                className="text-white hover:bg-sidebar-accent h-8 w-8 p-0"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="icon-container">
-                <img src={iconUrl} alt="HubbPet Icon" className="max-h-14 w-14" /> {/* Aumentando significativamente o tamanho do logo quando colapsado */}
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={toggleSidebar} 
-                className="text-white hover:bg-sidebar-accent h-8 w-8 p-0"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </>
-          )}
+          <div className="flex items-center">
+            {isExpanded ? (
+              <img src={logoUrl} alt="HubbPet" className="max-h-10" />
+            ) : (
+              <img src={iconUrl} alt="HubbPet Icon" className="max-h-16 w-auto transition-all duration-300" />
+            )}
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleSidebar} 
+            className="text-white hover:bg-sidebar-accent h-8 w-8 p-0 ml-auto"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
         </div>
       </div>
       <div className="mt-2 flex flex-col items-center space-y-1">
