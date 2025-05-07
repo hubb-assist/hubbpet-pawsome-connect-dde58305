@@ -8,13 +8,7 @@ import { PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import ProcedimentoFormDialog from '@/components/admin/ProcedimentoFormDialog';
 import DeleteConfirmationDialog from '@/components/tutor/DeleteConfirmationDialog';
-
-interface Procedimento {
-  id: string;
-  nome: string;
-  descricao: string | null;
-  created_at: string;
-}
+import { Procedimento } from '@/shared/types';
 
 const ProcedimentosPage = () => {
   const [procedimentos, setProcedimentos] = useState<Procedimento[]>([]);
@@ -34,7 +28,7 @@ const ProcedimentosPage = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProcedimentos(data || []);
+      setProcedimentos(data as Procedimento[] || []);
     } catch (error: any) {
       toast.error(`Erro ao carregar procedimentos: ${error.message}`);
     } finally {

@@ -1,4 +1,3 @@
-
 export type AuthState = {
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -29,4 +28,11 @@ export type DashboardStats = {
   totalSpent?: number; // For tutors
   totalEarned?: number; // For veterinarians
   rating?: number; // For veterinarians
+};
+
+export type Procedimento = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  created_at: string;
 };

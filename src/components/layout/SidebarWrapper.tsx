@@ -28,7 +28,11 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
             {isExpanded ? (
               <img src={logoUrl} alt="HubbPet" className="max-h-10" />
             ) : (
-              <img src={iconUrl} alt="HubbPet Icon" className="max-h-16 w-auto transition-all duration-300" />
+              <img 
+                src={iconUrl} 
+                alt="HubbPet Icon" 
+                className="h-12 w-auto transition-all duration-300" 
+              />
             )}
           </div>
           <Button 

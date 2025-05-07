@@ -82,12 +82,12 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
     setIsLoading(true);
     try {
       const petData = {
-        name: data.name,
-        type: data.type,
-        breed: data.breed || null,
-        birthdate: data.birthdate ? new Date(data.birthdate) : null,
+        nome: data.name,
+        especie: data.type,
+        raca: data.breed || null,
+        data_nascimento: data.birthdate ? data.birthdate : null,
         tutor_id: user.id,
-        updated_at: new Date(),
+        updated_at: new Date().toISOString(),
       };
       
       let response;
@@ -100,7 +100,7 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
       } else {
         response = await supabase
           .from('pets')
-          .insert({ ...petData, created_at: new Date() });
+          .insert({ ...petData, created_at: new Date().toISOString() });
       }
       
       const { error } = response;

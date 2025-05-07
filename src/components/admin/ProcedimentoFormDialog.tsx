@@ -81,7 +81,7 @@ const ProcedimentoFormDialog = ({
             nome: values.nome,
             descricao: values.descricao || null,
           })
-          .eq("id", procedimento.id);
+          .eq("id", procedimento!.id);
 
         if (error) throw error;
         toast.success("Procedimento atualizado com sucesso!");
