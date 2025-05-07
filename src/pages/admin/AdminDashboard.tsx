@@ -32,11 +32,19 @@ const AdminDashboard: React.FC = () => {
           .from('veterinarios')
           .select('*', { count: 'exact', head: true });
 
+        if (totalError) {
+          console.error('Erro ao buscar total de veterinários:', totalError);
+        }
+
         // Obter contagem de veterinários pendentes
         const { count: pendingVets, error: pendingError } = await supabase
           .from('veterinarios')
           .select('*', { count: 'exact', head: true })
           .eq('status_aprovacao', 'pendente');
+
+        if (pendingError) {
+          console.error('Erro ao buscar veterinários pendentes:', pendingError);
+        }
 
         // Obter contagem de agendamentos de hoje
         const hoje = new Date();
@@ -50,23 +58,31 @@ const AdminDashboard: React.FC = () => {
           .gte('data_hora', hoje.toISOString())
           .lt('data_hora', amanha.toISOString());
 
-        // Obter receita do mês atual
-        const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-        
-        const { data: monthRevenue, error: revenueError } = await supabase
-          .from('agendamentos')
-          .select('valor_pago')
-          .gte('data_hora', primeiroDia.toISOString())
-          .lte('data_hora', ultimoDia.toISOString())
-          .eq('status', 'realizado');
-        
-        // Calcular receita total
-        const totalRevenue = monthRevenue ? 
-          monthRevenue.reduce((sum, item) => sum + Number(item.valor_pago), 0) : 0;
+        if (appointmentsError) {
+          console.error('Erro ao buscar agendamentos de hoje:', appointmentsError);
+        }
 
-        if (totalError || pendingError || appointmentsError || revenueError) {
-          throw new Error('Erro ao buscar dados do dashboard');
+        // Obter receita do mês atual - usando abordagem alternativa
+        let totalRevenue = 0;
+        
+        try {
+          const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+          const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+          
+          const { data: monthRevenue, error: revenueError } = await supabase
+            .from('agendamentos')
+            .select('valor_pago')
+            .gte('data_hora', primeiroDia.toISOString())
+            .lte('data_hora', ultimoDia.toISOString())
+            .eq('status', 'realizado');
+          
+          if (revenueError) {
+            console.error('Erro ao buscar receita do mês:', revenueError);
+          } else if (monthRevenue) {
+            totalRevenue = monthRevenue.reduce((sum, item) => sum + Number(item.valor_pago || 0), 0);
+          }
+        } catch (revenueError) {
+          console.error('Erro ao calcular receita:', revenueError);
         }
 
         setStats({

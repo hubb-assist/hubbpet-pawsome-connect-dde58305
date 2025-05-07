@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Usuario } from '@/shared/types';
@@ -47,16 +46,18 @@ const UsuariosPage = () => {
   const fetchUsuarios = async () => {
     setIsLoading(true);
     try {
-      // Usar a nova função segura para buscar todos os usuários
-      const { data, error } = await supabase.rpc('get_all_users');
+      // Tentar usar a função RPC para buscar usuários
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_all_users');
       
-      if (error) throw error;
-      
-      console.log("Usuários obtidos via função RPC:", data);
-      
-      if (data && data.length > 0) {
+      if (rpcError) {
+        console.error('Erro ao buscar usuários via RPC:', rpcError);
+        // Em caso de erro na RPC, usar o método de fallback
+        await fetchUsuariosFromTables();
+      } else if (rpcData && rpcData.length > 0) {
+        console.log("Usuários obtidos via função RPC:", rpcData);
+        
         // Converter o tipo de role para o enum esperado pelo tipo Usuario
-        const usuariosData: Usuario[] = data.map(user => ({
+        const usuariosData: Usuario[] = rpcData.map(user => ({
           ...user,
           role: convertToUserRole(user.role)
         }));
@@ -66,18 +67,15 @@ const UsuariosPage = () => {
       } else {
         console.log("Nenhum usuário encontrado via RPC");
         // Caso não encontre usuários via RPC, tentar o método alternativo
-        fetchUsuariosFromTables();
+        await fetchUsuariosFromTables();
       }
     } catch (error) {
-      console.error('Erro ao buscar usuários via RPC:', error);
+      console.error('Erro ao buscar usuários:', error);
       toast({
         title: "Erro",
         description: "Não foi possível carregar a lista de usuários.",
         variant: "destructive",
       });
-      
-      // Tentar o método alternativo em caso de erro
-      fetchUsuariosFromTables();
     } finally {
       setIsLoading(false);
     }
