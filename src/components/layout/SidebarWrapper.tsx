@@ -20,9 +20,9 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
       "min-h-screen bg-hubbpet-primary text-white transition-all duration-300",
       isExpanded ? "w-64" : "w-16"
     )}>
-      <div className="flex flex-col items-center h-16 px-4">
-        <div className={cn("flex items-center justify-center w-full py-4", 
-          isExpanded ? "justify-start" : "justify-center"
+      <div className="flex flex-col items-center">
+        <div className={cn("flex items-center w-full py-4",
+          isExpanded ? "justify-start px-6" : "justify-center"
         )}>
           {isExpanded ? (
             <div className="logo-container">
@@ -34,7 +34,7 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
             </div>
           )}
         </div>
-        <div className="w-full flex justify-center mt-2">
+        <div className="w-full flex justify-center py-2 border-b border-sidebar-accent">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -45,7 +45,7 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
           </Button>
         </div>
       </div>
-      <div className="mt-8 space-y-4 flex flex-col items-center">
+      <div className="mt-2 flex flex-col items-center space-y-1">
         {children}
       </div>
     </div>

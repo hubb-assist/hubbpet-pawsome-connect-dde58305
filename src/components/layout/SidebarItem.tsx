@@ -17,7 +17,7 @@ const SidebarItem = ({ icon: Icon, title, href, isActive = false, isExpanded }: 
     <Link
       to={href}
       className={cn(
-        "flex items-center justify-center w-full py-4",
+        "flex items-center justify-center w-full py-2",
         isActive ? "bg-sidebar-accent text-white" : "text-white hover:bg-sidebar-accent hover:text-white",
         isExpanded ? "px-6" : "px-0"
       )}
