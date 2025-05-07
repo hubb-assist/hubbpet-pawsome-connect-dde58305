@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { VeterinarioProfileForm } from '@/components/veterinario/VeterinarioProfileForm';
+import VeterinarioProfileForm from '@/components/veterinario/VeterinarioProfileForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const VeterinarioPerfilPage: React.FC = () => {
