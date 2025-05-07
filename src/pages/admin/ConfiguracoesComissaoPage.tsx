@@ -10,13 +10,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface Servico {
-  id: number;
+  id: string;
   nome: string;
 }
 
 const ConfiguracoesComissaoPage = () => {
   const [servicos, setServicos] = useState<Servico[]>([]);
-  const [servicoSelecionado, setServicoSelecionado] = useState<number | null>(null);
+  const [servicoSelecionado, setServicoSelecionado] = useState<string | null>(null);
   const [comissao, setComissao] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -126,13 +126,13 @@ const ConfiguracoesComissaoPage = () => {
       <div className="grid gap-4">
         <div>
           <Label htmlFor="servico">Serviço</Label>
-          <Select onValueChange={(value) => setServicoSelecionado(parseInt(value))} value={servicoSelecionado ? servicoSelecionado.toString() : ''}>
+          <Select onValueChange={(value) => setServicoSelecionado(value)} value={servicoSelecionado || ''}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Selecione um serviço" />
             </SelectTrigger>
             <SelectContent>
               {servicos.map((servico) => (
-                <SelectItem key={servico.id} value={servico.id.toString()}>
+                <SelectItem key={servico.id} value={servico.id}>
                   {servico.nome}
                 </SelectItem>
               ))}
