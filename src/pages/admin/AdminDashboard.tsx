@@ -59,7 +59,7 @@ const AdminDashboard: React.FC = () => {
           .select('valor_pago')
           .gte('data_hora', primeiroDia.toISOString())
           .lte('data_hora', ultimoDia.toISOString())
-          .eq('status', 'concluido');
+          .eq('status', 'realizado');
         
         // Calcular receita total
         const totalRevenue = monthRevenue ? 

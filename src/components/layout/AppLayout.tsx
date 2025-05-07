@@ -1,15 +1,15 @@
 
 import React from 'react';
-import { Outlet } from 'react-router-dom';
 import TutorSidebar from './TutorSidebar';
 import VeterinarySidebar from './VeterinarySidebar';
 import AdminSidebar from './AdminSidebar';
 
 interface AppLayoutProps {
   userRole: 'tutor' | 'veterinary' | 'admin';
+  children: React.ReactNode;
 }
 
-const AppLayout = ({ userRole }: AppLayoutProps) => {
+const AppLayout = ({ userRole, children }: AppLayoutProps) => {
   const renderSidebar = () => {
     switch (userRole) {
       case 'tutor':
@@ -27,7 +27,7 @@ const AppLayout = ({ userRole }: AppLayoutProps) => {
     <div className="flex min-h-screen">
       {renderSidebar()}
       <div className="flex-1 p-6">
-        <Outlet />
+        {children}
       </div>
     </div>
   );
