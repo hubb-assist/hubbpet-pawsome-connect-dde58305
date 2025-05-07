@@ -9,6 +9,7 @@ interface SidebarItemProps {
   href: string;
   isActive: boolean;
   isExpanded: boolean;
+  onExpandClick?: () => void;
 }
 
 const SidebarItem: React.FC<SidebarItemProps> = ({
@@ -16,27 +17,36 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   title,
   href,
   isActive,
-  isExpanded
+  isExpanded,
+  onExpandClick
 }) => {
   const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (!isExpanded && onExpandClick) {
+      onExpandClick();
+      return;
+    }
+    navigate(href);
+  };
 
   return (
     <li
       className={`
         flex items-center p-2 rounded-md cursor-pointer transition-colors
-        ${isActive ? 'bg-[#2D113F] text-white' : 'text-gray-600 hover:bg-gray-100'}
+        ${isActive ? 'bg-[#2D113F] text-white' : 'text-white hover:bg-sidebar-accent'}
       `}
-      onClick={() => navigate(href)}
+      onClick={handleClick}
     >
       <div className={`
-        flex items-center justify-center 
-        ${!isExpanded ? 'mx-auto p-1.5' : ''}
+        flex items-center
+        ${!isExpanded ? 'mx-auto p-1.5' : 'mr-3'}
       `}>
         <Icon size={20} />
       </div>
       
       {isExpanded && (
-        <span className="ml-3 text-sm font-medium">{title}</span>
+        <span className="text-sm font-medium">{title}</span>
       )}
     </li>
   );

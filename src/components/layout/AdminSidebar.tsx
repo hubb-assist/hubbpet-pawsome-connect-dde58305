@@ -24,6 +24,12 @@ const AdminSidebar = () => {
     setIsExpanded(!isExpanded);
   };
 
+  const handleItemClick = () => {
+    if (!isExpanded) {
+      setIsExpanded(true);
+    }
+  };
+
   const menuItems = [
     { icon: Home, title: 'Dashboard', href: '/admin' },
     { icon: Users, title: 'Usuários', href: '/admin/usuarios' },
@@ -44,6 +50,7 @@ const AdminSidebar = () => {
           href={item.href}
           isActive={location.pathname === item.href}
           isExpanded={isExpanded}
+          onExpandClick={handleItemClick}
         />
       ))}
     </SidebarWrapper>

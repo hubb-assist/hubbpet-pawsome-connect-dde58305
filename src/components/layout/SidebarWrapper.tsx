@@ -20,7 +20,7 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
       "min-h-screen bg-hubbpet-primary text-white transition-all duration-300",
       isExpanded ? "w-64" : "w-16"
     )}>
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col">
         <div className={cn("flex items-center w-full py-4",
           isExpanded ? "justify-between px-6" : "justify-center px-1"
         )}>
@@ -38,11 +38,11 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
             </div>
           ) : (
             <div className="flex flex-col items-center w-full">
-              <div className="p-1">
+              <div className="p-2">
                 <img 
                   src={iconUrl} 
                   alt="HubbPet Icon" 
-                  className="h-10 w-10 object-contain" 
+                  className="h-8 w-8 object-contain" 
                 />
               </div>
               <Button 
@@ -57,7 +57,7 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
           )}
         </div>
       </div>
-      <div className="mt-2 flex flex-col items-center space-y-1">
+      <div className="mt-6 flex flex-col px-4 space-y-1">
         {children}
       </div>
     </div>
