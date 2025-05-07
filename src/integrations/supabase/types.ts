@@ -563,11 +563,19 @@ export type Database = {
           telefone: string
         }[]
       }
+      get_auth_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: string
       }
       is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }

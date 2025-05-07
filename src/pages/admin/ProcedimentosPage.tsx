@@ -38,14 +38,21 @@ const ProcedimentosPage = () => {
   const loadProcedimentos = async () => {
     setIsLoading(true);
     try {
+      console.log("Buscando procedimentos...");
       const { data, error } = await supabase
         .from('procedimentos')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar procedimentos:", error);
+        throw error;
+      }
+      
+      console.log("Procedimentos carregados:", data?.length || 0, "registros");
       setProcedimentos(data as Procedimento[] || []);
     } catch (error: any) {
+      console.error("Exceção ao carregar procedimentos:", error);
       toast.error(`Erro ao carregar procedimentos: ${error.message}`);
     } finally {
       setIsLoading(false);
@@ -80,11 +87,15 @@ const ProcedimentosPage = () => {
         .delete()
         .eq('id', procedimentoToDelete.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao excluir procedimento:", error);
+        throw error;
+      }
       
       setProcedimentos(procedimentos.filter(p => p.id !== procedimentoToDelete.id));
       toast.success('Procedimento removido com sucesso!');
     } catch (error: any) {
+      console.error("Exceção ao excluir procedimento:", error);
       toast.error(`Erro ao remover procedimento: ${error.message}`);
     } finally {
       setIsDeleteDialogOpen(false);
