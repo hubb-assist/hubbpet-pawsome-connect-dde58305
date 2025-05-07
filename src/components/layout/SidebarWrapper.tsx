@@ -22,7 +22,7 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
     )}>
       <div className="flex flex-col items-center">
         <div className={cn("flex items-center w-full py-4",
-          isExpanded ? "justify-between px-6" : "justify-center"
+          isExpanded ? "justify-between px-6" : "justify-between px-4"
         )}>
           {isExpanded ? (
             <>
@@ -40,14 +40,14 @@ const SidebarWrapper = ({ children, isExpanded, toggleSidebar }: SidebarWrapperP
             </>
           ) : (
             <>
-              <div className="icon-container flex justify-center">
+              <div className="icon-container">
                 <img src={iconUrl} alt="HubbPet Icon" className="max-h-8" />
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={toggleSidebar} 
-                className="absolute top-4 right-2 text-white hover:bg-sidebar-accent h-8 w-8 p-0"
+                className="text-white hover:bg-sidebar-accent h-8 w-8 p-0"
               >
                 <Menu className="h-5 w-5" />
               </Button>

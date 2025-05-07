@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Menu } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   DropdownMenu,
@@ -61,9 +61,8 @@ const NavbarWithLogout: React.FC = () => {
         <img 
           src="https://sq360.com.br/logo-hubb-novo/hubb_pet_icon.png" 
           alt="HubbPet" 
-          className="h-8 w-8 mr-2"
+          className="h-8 w-8"
         />
-        <Menu className="h-6 w-6 text-white" />
       </div>
       
       <DropdownMenu>
