@@ -1,718 +1,525 @@
 
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { 
-  MessageCircle, 
-  Users, 
-  AlertTriangle, 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { 
   Check, 
-  X, 
-  RefreshCcw,
-  Send,
-  ClipboardCheck
+  Mail, 
+  MessageSquare, 
+  AlertTriangle, 
+  Clock, 
+  RotateCcw,
+  CheckCircle,
+  XCircle,
+  RefreshCcw
 } from 'lucide-react';
 
-type Conflito = {
+// Defina os tipos para evitar erros TypeScript
+interface Tutor {
+  nome_completo: string;
+  email: string;
+}
+
+interface Veterinario {
+  nome_completo: string;
+  email: string;
+}
+
+interface Agendamento {
+  id: string;
+  data_hora: string;
+  servico: {
+    nome: string;
+  };
+}
+
+interface Usuario {
+  email: string;
+}
+
+interface Mensagem {
+  id: string;
+  conflito_id: string;
+  mensagem: string;
+  created_at: string;
+  user_id: string;
+  tipo_usuario: string;
+  user: Usuario;
+}
+
+interface Conflito {
   id: string;
   titulo: string;
   descricao: string;
   status: string;
+  created_at: string;
+  agendamento_id: string;
+  tutor_id: string;
+  veterinario_id: string;
   resolvido: boolean;
   estorno_solicitado: boolean;
-  estorno_aprovado: boolean | null;
-  valor_estorno: number | null;
-  created_at: string;
-  updated_at: string;
-  tutor: {
-    nome_completo: string;
-    email: string;
-  };
-  veterinario: {
-    nome_completo: string;
-    email: string;
-  };
-  agendamento: {
-    data_hora: string;
-    valor_total: number;
-    status: string;
-  };
-};
+  estorno_aprovado: boolean;
+  agendamento: Agendamento;
+  veterinario: Veterinario;
+  tutor: Tutor;
+  mensagens?: Mensagem[];
+}
 
-type Mensagem = {
-  id: string;
-  conflito_id: string;
-  user_id: string;
-  tipo_usuario: string;
-  mensagem: string;
-  created_at: string;
-  user?: {
-    email: string;
-  };
-};
-
-const MediacaoConflitosPage = () => {
-  const { toast } = useToast();
-  const [selectedConflito, setSelectedConflito] = useState<Conflito | null>(null);
+const MediacaoConflitosPage: React.FC = () => {
+  const [conflitos, setConflitos] = useState<Conflito[]>([]);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
+  const [conflitoSelecionado, setConflitoSelecionado] = useState<Conflito | null>(null);
   const [novaMensagem, setNovaMensagem] = useState('');
-  const [tabAtual, setTabAtual] = useState('abertos');
-  const [modalConflito, setModalConflito] = useState<boolean>(false);
-  
-  // Função para buscar conflitos
-  const fetchConflitos = async (status: string): Promise<Conflito[]> => {
-    const { data, error } = await supabase
-      .from('conflitos')
-      .select(`
-        *,
-        tutor:tutor_id(nome_completo, email),
-        veterinario:veterinario_id(nome_completo, email),
-        agendamento:agendamento_id(data_hora, valor_total, status)
-      `)
-      .eq('status', status)
-      .order('created_at', { ascending: false });
-      
-    if (error) {
-      console.error('Erro ao buscar conflitos:', error);
-      throw new Error(error.message);
-    }
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  // Buscar conflitos
+  useEffect(() => {
+    const fetchConflitos = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('conflitos')
+          .select(`
+            *,
+            agendamento:agendamento_id (
+              id,
+              data_hora,
+              servico:servico_id (nome)
+            ),
+            tutor:tutor_id (*),
+            veterinario:veterinario_id (*)
+          `)
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        // Conversão explícita para satisfazer o TypeScript
+        setConflitos(data as unknown as Conflito[]);
+        
+        // Se selecionarmos o primeiro conflito automaticamente
+        if (data && data.length > 0) {
+          setConflitoSelecionado(data[0] as unknown as Conflito);
+          await fetchMensagens(data[0].id);
+        }
+      } catch (error: any) {
+        console.error('Erro ao carregar conflitos:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os conflitos.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    return data || [];
-  };
-  
-  // Função para buscar mensagens de um conflito
-  const fetchMensagens = async (conflitoId: string): Promise<Mensagem[]> => {
-    const { data, error } = await supabase
-      .from('mensagens_conflitos')
-      .select(`*, user:user_id(email)`)
-      .eq('conflito_id', conflitoId)
-      .order('created_at', { ascending: true });
+    fetchConflitos();
+  }, [toast]);
+
+  // Buscar mensagens de um conflito específico
+  const fetchMensagens = async (conflitoId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('mensagens_conflitos')
+        .select(`
+          *,
+          user:user_id (email)
+        `)
+        .eq('conflito_id', conflitoId)
+        .order('created_at', { ascending: true });
+        
+      if (error) throw error;
       
-    if (error) {
-      console.error('Erro ao buscar mensagens:', error);
-      throw new Error(error.message);
+      // Conversão explícita para satisfazer o TypeScript
+      setMensagens(data as unknown as Mensagem[]);
+    } catch (error: any) {
+      console.error('Erro ao carregar mensagens:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as mensagens deste conflito.",
+        variant: "destructive"
+      });
     }
-    
-    return data || [];
   };
-  
-  // Query para conflitos abertos
-  const { 
-    data: conflitosAbertos = [], 
-    refetch: refetchAbertos 
-  } = useQuery({
-    queryKey: ['conflitos', 'abertos'],
-    queryFn: () => fetchConflitos('aberto'),
-    enabled: tabAtual === 'abertos'
-  });
-  
-  // Query para conflitos em mediação
-  const { 
-    data: conflitosEmMediacao = [], 
-    refetch: refetchEmMediacao 
-  } = useQuery({
-    queryKey: ['conflitos', 'mediacao'],
-    queryFn: () => fetchConflitos('mediacao'),
-    enabled: tabAtual === 'mediacao'
-  });
-  
-  // Query para conflitos resolvidos
-  const { 
-    data: conflitosResolvidos = [], 
-    refetch: refetchResolvidos 
-  } = useQuery({
-    queryKey: ['conflitos', 'resolvidos'],
-    queryFn: () => fetchConflitos('resolvido'),
-    enabled: tabAtual === 'resolvidos'
-  });
-  
-  // Função para enviar mensagem
-  const enviarMensagem = async () => {
-    if (!novaMensagem.trim() || !selectedConflito) return;
+
+  // Selecionar conflito
+  const handleSelecionarConflito = async (conflito: Conflito) => {
+    setConflitoSelecionado(conflito);
+    await fetchMensagens(conflito.id);
+  };
+
+  // Enviar nova mensagem
+  const handleEnviarMensagem = async () => {
+    if (!novaMensagem.trim() || !conflitoSelecionado) return;
     
     try {
-      const { data: userdata } = await supabase.auth.getUser();
-      if (!userdata.user) {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
         toast({
-          title: "Erro de autenticação",
-          description: "Você precisa estar logado para enviar mensagens.",
+          title: "Erro",
+          description: "Você precisa estar autenticado para enviar mensagens.",
           variant: "destructive"
         });
         return;
       }
       
-      const { error } = await supabase.from('mensagens_conflitos').insert({
-        conflito_id: selectedConflito.id,
-        user_id: userdata.user.id,
-        tipo_usuario: 'admin',
-        mensagem: novaMensagem
-      });
-      
+      const { error } = await supabase
+        .from('mensagens_conflitos')
+        .insert({
+          conflito_id: conflitoSelecionado.id,
+          mensagem: novaMensagem,
+          user_id: user.id,
+          tipo_usuario: 'admin'
+        });
+        
       if (error) throw error;
       
-      // Atualizar status do conflito para mediação se estiver aberto
-      if (selectedConflito.status === 'aberto') {
-        await supabase
-          .from('conflitos')
-          .update({ status: 'mediacao' })
-          .eq('id', selectedConflito.id);
-        
-        setSelectedConflito({
-          ...selectedConflito,
-          status: 'mediacao'
-        });
-      }
-      
-      // Limpar campo e atualizar mensagens
+      // Recarregar mensagens
+      await fetchMensagens(conflitoSelecionado.id);
       setNovaMensagem('');
-      const novasMensagens = await fetchMensagens(selectedConflito.id);
-      setMensagens(novasMensagens);
-      
-      // Atualizar listas de conflitos
-      refetchAbertos();
-      refetchEmMediacao();
       
       toast({
         title: "Mensagem enviada",
-        description: "Sua mensagem foi enviada com sucesso."
+        description: "Sua mensagem foi enviada com sucesso.",
       });
-      
     } catch (error: any) {
       console.error('Erro ao enviar mensagem:', error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível enviar sua mensagem.",
+        description: "Não foi possível enviar a mensagem.",
         variant: "destructive"
       });
     }
   };
-  
-  // Função para marcar conflito como resolvido
-  const resolverConflito = async (conflito: Conflito) => {
+
+  // Atualizar status do conflito
+  const handleAtualizarStatus = async (novoStatus: string) => {
+    if (!conflitoSelecionado) return;
+    
     try {
       const { error } = await supabase
         .from('conflitos')
         .update({ 
-          status: 'resolvido', 
-          resolvido: true,
-          updated_at: new Date().toISOString()
+          status: novoStatus,
+          resolvido: novoStatus === 'resolvido',
+          // Se o status for "estorno_aprovado", também aprovar o estorno
+          estorno_aprovado: novoStatus === 'estorno_aprovado' ? true : conflitoSelecionado.estorno_aprovado
         })
-        .eq('id', conflito.id);
-      
+        .eq('id', conflitoSelecionado.id);
+        
       if (error) throw error;
       
-      toast({
-        title: "Conflito resolvido",
-        description: "O conflito foi marcado como resolvido com sucesso."
-      });
-      
-      // Atualizar listas de conflitos
-      refetchAbertos();
-      refetchEmMediacao();
-      refetchResolvidos();
-      
-      // Fechar modal se estiver aberto
-      setModalConflito(false);
-      setSelectedConflito(null);
-      
-    } catch (error: any) {
-      console.error('Erro ao resolver conflito:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível resolver o conflito.",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  // Função para aprovar estorno
-  const aprovarEstorno = async (conflito: Conflito, valor: number) => {
-    try {
-      const { error } = await supabase
-        .from('conflitos')
-        .update({ 
-          estorno_aprovado: true,
-          valor_estorno: valor,
-          status: 'resolvido',
-          resolvido: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', conflito.id);
-      
-      if (error) throw error;
-      
-      // Aqui deveria ocorrer a integração com gateway de pagamento para realizar estorno
-      // Implementação dependerá do gateway utilizado
-      
-      toast({
-        title: "Estorno aprovado",
-        description: `Estorno de R$ ${valor.toFixed(2)} aprovado com sucesso.`
-      });
-      
-      // Atualizar listas de conflitos
-      refetchAbertos();
-      refetchEmMediacao();
-      refetchResolvidos();
-      
-      // Fechar modal se estiver aberto
-      setModalConflito(false);
-      setSelectedConflito(null);
-      
-    } catch (error: any) {
-      console.error('Erro ao aprovar estorno:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível aprovar o estorno.",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  // Função para rejeitar estorno
-  const rejeitarEstorno = async (conflito: Conflito) => {
-    try {
-      const { error } = await supabase
-        .from('conflitos')
-        .update({ 
-          estorno_aprovado: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', conflito.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Estorno rejeitado",
-        description: "O pedido de estorno foi rejeitado."
-      });
-      
-      // Fechar modal se estiver aberto
-      setModalConflito(false);
-      setSelectedConflito(null);
-      
-    } catch (error: any) {
-      console.error('Erro ao rejeitar estorno:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível rejeitar o estorno.",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  // Quando um conflito é selecionado, carregamos suas mensagens
-  useEffect(() => {
-    if (selectedConflito) {
-      const carregarMensagens = async () => {
-        try {
-          const mensagensDados = await fetchMensagens(selectedConflito.id);
-          setMensagens(mensagensDados);
-        } catch (error) {
-          console.error('Erro ao carregar mensagens:', error);
+      // Atualizar o conflito selecionado e a lista de conflitos
+      const conflitosAtualizados = conflitos.map(c => {
+        if (c.id === conflitoSelecionado.id) {
+          return { 
+            ...c, 
+            status: novoStatus,
+            resolvido: novoStatus === 'resolvido',
+            estorno_aprovado: novoStatus === 'estorno_aprovado' ? true : c.estorno_aprovado
+          };
         }
-      };
-      carregarMensagens();
-    } else {
-      setMensagens([]);
+        return c;
+      });
+      
+      setConflitos(conflitosAtualizados);
+      setConflitoSelecionado({
+        ...conflitoSelecionado,
+        status: novoStatus,
+        resolvido: novoStatus === 'resolvido',
+        estorno_aprovado: novoStatus === 'estorno_aprovado' ? true : conflitoSelecionado.estorno_aprovado
+      });
+      
+      toast({
+        title: "Status atualizado",
+        description: `O status do conflito foi atualizado para "${novoStatus}".`,
+      });
+    } catch (error: any) {
+      console.error('Erro ao atualizar status:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o status do conflito.",
+        variant: "destructive"
+      });
     }
-  }, [selectedConflito]);
-  
-  // Formatar data para exibição
-  const formatarData = (dataString: string) => {
-    const data = new Date(dataString);
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(data);
   };
-  
-  // Renderizar card de conflito
-  const renderCardConflito = (conflito: Conflito) => {
-    return (
-      <Card key={conflito.id} className="mb-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => {
-        setSelectedConflito(conflito);
-        setModalConflito(true);
-      }}>
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-lg">{conflito.titulo}</CardTitle>
-            <Badge variant={
-              conflito.status === 'aberto' ? 'destructive' : 
-              conflito.status === 'mediacao' ? 'default' : 'outline'
-            }>
-              {conflito.status === 'aberto' ? 'Novo' : 
-               conflito.status === 'mediacao' ? 'Em Mediação' : 'Resolvido'}
-            </Badge>
-          </div>
-          <CardDescription>
-            Aberto em {formatarData(conflito.created_at)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="font-semibold">Tutor:</p>
-              <p>{conflito.tutor.nome_completo}</p>
-            </div>
-            <div>
-              <p className="font-semibold">Veterinário:</p>
-              <p>{conflito.veterinario.nome_completo}</p>
-            </div>
-            {conflito.estorno_solicitado && (
-              <div className="col-span-2 mt-2">
-                <p className="text-yellow-600 flex items-center gap-1">
-                  <AlertTriangle size={16} />
-                  Solicitação de estorno pendente
-                </p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
+
+  // Status badge
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'aberto':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-300">Aberto</Badge>;
+      case 'em_analise':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-300">Em análise</Badge>;
+      case 'resolvido':
+        return <Badge variant="outline" className="bg-green-50 text-green-600 border-green-300">Resolvido</Badge>;
+      case 'estorno_solicitado':
+        return <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-300">Estorno solicitado</Badge>;
+      case 'estorno_aprovado':
+        return <Badge variant="outline" className="bg-green-50 text-green-600 border-green-300">Estorno aprovado</Badge>;
+      case 'estorno_negado':
+        return <Badge variant="outline" className="bg-red-50 text-red-600 border-red-300">Estorno negado</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
   };
-  
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Mediação de Conflitos</h1>
-      
-      <Tabs defaultValue="abertos" onValueChange={setTabAtual}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="abertos" className="flex items-center gap-2">
-            <AlertTriangle size={16} />
-            Abertos <Badge variant="destructive" className="ml-1">{conflitosAbertos.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="mediacao" className="flex items-center gap-2">
-            <MessageCircle size={16} />
-            Em Mediação <Badge variant="default" className="ml-1">{conflitosEmMediacao.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="resolvidos" className="flex items-center gap-2">
-            <Check size={16} />
-            Resolvidos
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="abertos">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {conflitosAbertos.length === 0 ? (
-              <div className="col-span-2 p-8 text-center bg-gray-50 rounded-lg border border-dashed">
-                <p className="text-gray-500">Não há conflitos abertos no momento.</p>
-              </div>
-            ) : (
-              conflitosAbertos.map(renderCardConflito)
-            )}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="mediacao">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {conflitosEmMediacao.length === 0 ? (
-              <div className="col-span-2 p-8 text-center bg-gray-50 rounded-lg border border-dashed">
-                <p className="text-gray-500">Não há conflitos em mediação no momento.</p>
-              </div>
-            ) : (
-              conflitosEmMediacao.map(renderCardConflito)
-            )}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="resolvidos">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {conflitosResolvidos.length === 0 ? (
-              <div className="col-span-2 p-8 text-center bg-gray-50 rounded-lg border border-dashed">
-                <p className="text-gray-500">Não há conflitos resolvidos para exibir.</p>
-              </div>
-            ) : (
-              conflitosResolvidos.map(renderCardConflito)
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-      
-      {/* Modal de detalhes do conflito */}
-      <Dialog open={modalConflito} onOpenChange={setModalConflito}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          {selectedConflito && (
-            <>
-              <DialogHeader>
-                <div className="flex justify-between items-center">
-                  <DialogTitle>{selectedConflito.titulo}</DialogTitle>
-                  <Badge variant={
-                    selectedConflito.status === 'aberto' ? 'destructive' : 
-                    selectedConflito.status === 'mediacao' ? 'default' : 'outline'
-                  }>
-                    {selectedConflito.status === 'aberto' ? 'Novo' : 
-                    selectedConflito.status === 'mediacao' ? 'Em Mediação' : 'Resolvido'}
-                  </Badge>
-                </div>
-                <DialogDescription>
-                  Aberto em {formatarData(selectedConflito.created_at)}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Detalhes da Consulta</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm space-y-2">
-                    <div>
-                      <p className="font-semibold">Data e Hora:</p>
-                      <p>{formatarData(selectedConflito.agendamento.data_hora)}</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold">Valor:</p>
-                      <p>R$ {selectedConflito.agendamento.valor_total?.toFixed(2)}</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold">Status:</p>
-                      <p>{selectedConflito.agendamento.status}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Partes Envolvidas</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm space-y-3">
-                    <div className="flex items-start gap-2">
-                      <Users size={16} className="mt-1" />
-                      <div>
-                        <p className="font-semibold">Tutor:</p>
-                        <p>{selectedConflito.tutor.nome_completo}</p>
-                        <p className="text-xs text-gray-500">{selectedConflito.tutor.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Users size={16} className="mt-1" />
-                      <div>
-                        <p className="font-semibold">Veterinário:</p>
-                        <p>{selectedConflito.veterinario.nome_completo}</p>
-                        <p className="text-xs text-gray-500">{selectedConflito.veterinario.email}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Descrição do Problema</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="whitespace-pre-wrap">{selectedConflito.descricao}</p>
-                </CardContent>
-              </Card>
-              
-              {selectedConflito.estorno_solicitado && (
-                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-4">
-                  <h4 className="font-semibold flex items-center gap-2 text-yellow-700">
-                    <AlertTriangle size={18} />
-                    Solicitação de Estorno
-                  </h4>
-                  <p className="text-sm mt-2">
-                    O tutor solicitou estorno do valor de R$ {selectedConflito.agendamento.valor_total?.toFixed(2)}
-                  </p>
-                  
-                  {selectedConflito.estorno_aprovado === null && (
-                    <div className="mt-4 flex gap-2">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="default" className="bg-green-600 hover:bg-green-700">
-                            Aprovar Estorno
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Aprovar Estorno</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza que deseja aprovar o estorno no valor de R$ {selectedConflito.agendamento.valor_total?.toFixed(2)}?
-                              Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => aprovarEstorno(selectedConflito, selectedConflito.agendamento.valor_total)}>
-                              Confirmar Estorno
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
-                            Rejeitar Estorno
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Rejeitar Estorno</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza que deseja rejeitar essa solicitação de estorno?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => rejeitarEstorno(selectedConflito)}>
-                              Confirmar Rejeição
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  )}
-                  
-                  {selectedConflito.estorno_aprovado === true && (
-                    <div className="mt-2 flex items-center gap-2 text-green-600">
-                      <Check size={18} />
-                      <p>Estorno aprovado no valor de R$ {selectedConflito.valor_estorno?.toFixed(2)}</p>
-                    </div>
-                  )}
-                  
-                  {selectedConflito.estorno_aprovado === false && (
-                    <div className="mt-2 flex items-center gap-2 text-red-600">
-                      <X size={18} />
-                      <p>Solicitação de estorno rejeitada</p>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-sm">Mensagens</CardTitle>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => fetchMensagens(selectedConflito.id).then(setMensagens)}
-                      className="h-8"
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Lista de conflitos */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Conflitos</CardTitle>
+            <CardDescription>
+              {conflitos.length} conflitos registrados
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="abertos">
+              <TabsList className="w-full mb-4">
+                <TabsTrigger value="abertos" className="flex-1">Abertos</TabsTrigger>
+                <TabsTrigger value="resolvidos" className="flex-1">Resolvidos</TabsTrigger>
+                <TabsTrigger value="todos" className="flex-1">Todos</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="abertos">
+                {conflitos
+                  .filter(c => !c.resolvido)
+                  .map(conflito => (
+                    <div 
+                      key={conflito.id}
+                      className={`p-3 mb-2 rounded-lg cursor-pointer border ${conflito === conflitoSelecionado 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-gray-200 hover:border-gray-300'}`}
+                      onClick={() => handleSelecionarConflito(conflito)}
                     >
-                      <RefreshCcw size={14} />
-                    </Button>
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium">{conflito.titulo}</h3>
+                        {renderStatusBadge(conflito.status)}
+                      </div>
+                      <p className="text-sm text-gray-500 mb-2 line-clamp-1">{conflito.descricao}</p>
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>ID: {conflito.id.substring(0, 8)}</span>
+                        <span>{new Date(conflito.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+              </TabsContent>
+
+              <TabsContent value="resolvidos">
+                {conflitos
+                  .filter(c => c.resolvido)
+                  .map(conflito => (
+                    <div 
+                      key={conflito.id}
+                      className={`p-3 mb-2 rounded-lg cursor-pointer border ${conflito === conflitoSelecionado 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-gray-200 hover:border-gray-300'}`}
+                      onClick={() => handleSelecionarConflito(conflito)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium">{conflito.titulo}</h3>
+                        {renderStatusBadge(conflito.status)}
+                      </div>
+                      <p className="text-sm text-gray-500 mb-2 line-clamp-1">{conflito.descricao}</p>
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>ID: {conflito.id.substring(0, 8)}</span>
+                        <span>{new Date(conflito.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+              </TabsContent>
+
+              <TabsContent value="todos">
+                {conflitos.map(conflito => (
+                  <div 
+                    key={conflito.id}
+                    className={`p-3 mb-2 rounded-lg cursor-pointer border ${conflito === conflitoSelecionado 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-gray-200 hover:border-gray-300'}`}
+                    onClick={() => handleSelecionarConflito(conflito)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium">{conflito.titulo}</h3>
+                      {renderStatusBadge(conflito.status)}
+                    </div>
+                    <p className="text-sm text-gray-500 mb-2 line-clamp-1">{conflito.descricao}</p>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>ID: {conflito.id.substring(0, 8)}</span>
+                      <span>{new Date(conflito.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4 mb-4 max-h-60 overflow-y-auto p-1">
-                    {mensagens.length === 0 ? (
-                      <p className="text-center text-gray-500 py-8">
-                        Ainda não há mensagens neste conflito.
-                      </p>
-                    ) : (
-                      mensagens.map((msg) => (
-                        <div 
-                          key={msg.id} 
-                          className={`p-3 rounded-lg ${
-                            msg.tipo_usuario === 'admin' 
-                              ? 'bg-blue-50 border-blue-100 ml-8' 
-                              : msg.tipo_usuario === 'tutor'
-                                ? 'bg-green-50 border-green-100 mr-8'
-                                : 'bg-purple-50 border-purple-100 mr-8'
-                          }`}
+                ))}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Detalhes do conflito */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>
+              {conflitoSelecionado ? (
+                <div className="flex justify-between items-center">
+                  <div>
+                    {conflitoSelecionado.titulo}
+                    <div className="mt-1">
+                      {renderStatusBadge(conflitoSelecionado.status)}
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => conflitoSelecionado && fetchMensagens(conflitoSelecionado.id)}
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : 'Selecione um conflito'}
+            </CardTitle>
+            {conflitoSelecionado && (
+              <CardDescription>
+                <div className="mt-2">
+                  <p className="text-sm">{conflitoSelecionado.descricao}</p>
+                </div>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="text-sm">
+                    <p><strong>Tutor:</strong> {conflitoSelecionado?.tutor?.nome_completo || 'N/A'}</p>
+                    <p><strong>Email:</strong> {conflitoSelecionado?.tutor?.email || 'N/A'}</p>
+                  </div>
+                  <div className="text-sm">
+                    <p><strong>Veterinário:</strong> {conflitoSelecionado?.veterinario?.nome_completo || 'N/A'}</p>
+                    <p><strong>Email:</strong> {conflitoSelecionado?.veterinario?.email || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="mt-3 text-sm">
+                  <p><strong>Agendamento:</strong> ID {conflitoSelecionado?.agendamento?.id || 'N/A'}</p>
+                  <p><strong>Serviço:</strong> {conflitoSelecionado?.agendamento?.servico?.nome || 'N/A'}</p>
+                  <p><strong>Data:</strong> {conflitoSelecionado?.agendamento?.data_hora 
+                    ? new Date(conflitoSelecionado.agendamento.data_hora).toLocaleString()
+                    : 'N/A'}</p>
+                </div>
+                <div className="mt-4">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      size="sm" 
+                      variant={conflitoSelecionado.status === 'em_analise' ? 'default' : 'outline'}
+                      onClick={() => handleAtualizarStatus('em_analise')}
+                    >
+                      <Clock className="h-4 w-4 mr-1" />
+                      Em análise
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant={conflitoSelecionado.status === 'resolvido' ? 'default' : 'outline'}
+                      className={conflitoSelecionado.status === 'resolvido' ? 'bg-green-600 hover:bg-green-700' : ''}
+                      onClick={() => handleAtualizarStatus('resolvido')}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Marcar resolvido
+                    </Button>
+                    
+                    {conflitoSelecionado.estorno_solicitado && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          variant={conflitoSelecionado.estorno_aprovado ? 'default' : 'outline'}
+                          className={conflitoSelecionado.estorno_aprovado ? 'bg-green-600 hover:bg-green-700' : ''}
+                          onClick={() => handleAtualizarStatus('estorno_aprovado')}
                         >
-                          <div className="flex justify-between text-xs text-gray-500 mb-1">
-                            <span>
-                              {msg.tipo_usuario === 'admin' ? 'Administrador' : 
-                               msg.tipo_usuario === 'tutor' ? 'Tutor' : 'Veterinário'}
-                              {msg.user?.email ? ` (${msg.user.email})` : ''}
-                            </span>
-                            <span>{formatarData(msg.created_at)}</span>
-                          </div>
-                          <p className="whitespace-pre-wrap">{msg.mensagem}</p>
-                        </div>
-                      ))
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Aprovar estorno
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={conflitoSelecionado.status === 'estorno_negado' ? 'default' : 'outline'}
+                          className={conflitoSelecionado.status === 'estorno_negado' ? 'bg-red-600 hover:bg-red-700' : ''}
+                          onClick={() => handleAtualizarStatus('estorno_negado')}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Negar estorno
+                        </Button>
+                      </>
                     )}
                   </div>
-                  
-                  {!selectedConflito.resolvido && (
-                    <div className="flex gap-2 mt-4">
-                      <Textarea 
-                        placeholder="Digite sua mensagem aqui..." 
-                        value={novaMensagem}
-                        onChange={(e) => setNovaMensagem(e.target.value)}
-                      />
-                      <Button 
-                        onClick={enviarMensagem}
-                        disabled={!novaMensagem.trim()}
-                        className="flex-shrink-0"
+                </div>
+              </CardDescription>
+            )}
+          </CardHeader>
+          <CardContent>
+            {conflitoSelecionado ? (
+              <>
+                <div className="bg-gray-50 rounded-lg p-3 h-64 overflow-y-auto mb-4">
+                  {mensagens.length > 0 ? (
+                    mensagens.map((msg, index) => (
+                      <div 
+                        key={msg.id} 
+                        className={`mb-3 flex ${msg.tipo_usuario === 'admin' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <Send size={16} />
-                      </Button>
+                        <div 
+                          className={`px-3 py-2 rounded-lg max-w-[80%] ${
+                            msg.tipo_usuario === 'admin' 
+                              ? 'bg-primary text-white' 
+                              : 'bg-gray-200 text-gray-800'
+                          }`}
+                        >
+                          <div className="text-xs mb-1 opacity-80">
+                            {msg.user?.email || msg.tipo_usuario} - {new Date(msg.created_at).toLocaleTimeString()}
+                          </div>
+                          <p>{msg.mensagem}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-500">
+                      <div className="text-center">
+                        <MessageSquare className="mx-auto h-8 w-8 opacity-50 mb-2" />
+                        <p>Nenhuma mensagem neste conflito ainda.</p>
+                      </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-              
-              <DialogFooter className="gap-2">
-                <Button 
-                  variant="outline"
-                  onClick={() => setModalConflito(false)}
-                >
-                  Fechar
-                </Button>
+                </div>
                 
-                {!selectedConflito.resolvido && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button className="bg-green-600 hover:bg-green-700 flex items-center gap-2">
-                        <ClipboardCheck size={16} />
-                        Marcar como Resolvido
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Resolver Conflito</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tem certeza que deseja marcar este conflito como resolvido?
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => resolverConflito(selectedConflito)}>
-                          Confirmar
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-      
+                <div className="flex gap-2">
+                  <textarea 
+                    className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Digite sua resposta..."
+                    value={novaMensagem}
+                    onChange={(e) => setNovaMensagem(e.target.value)}
+                    rows={2}
+                  />
+                  <Button onClick={handleEnviarMensagem} disabled={!novaMensagem.trim()}>
+                    <Mail className="h-4 w-4 mr-1" />
+                    Enviar
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-500">
+                <div className="text-center">
+                  <AlertTriangle className="mx-auto h-10 w-10 opacity-50 mb-2" />
+                  <p>Selecione um conflito para visualizar os detalhes.</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

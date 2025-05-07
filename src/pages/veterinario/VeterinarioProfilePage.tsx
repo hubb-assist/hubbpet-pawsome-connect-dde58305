@@ -1,6 +1,5 @@
 
 import React from 'react';
-import VeterinarioProfileForm from '@/components/veterinario/VeterinarioProfileForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const VeterinarioPerfilPage: React.FC = () => {
@@ -12,7 +11,8 @@ const VeterinarioPerfilPage: React.FC = () => {
           <CardTitle>Dados Profissionais</CardTitle>
         </CardHeader>
         <CardContent>
-          <VeterinarioProfileForm />
+          <p className="text-gray-600">Formulário de perfil do veterinário em desenvolvimento.</p>
+          {/* Será implementado o VeterinarioProfileForm quando estiver disponível */}
         </CardContent>
       </Card>
     </div>
