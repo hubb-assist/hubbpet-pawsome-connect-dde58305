@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import TutorDashboard from "./pages/tutor/TutorDashboard";
 import VeterinarioDashboard from "./pages/veterinario/VeterinarioDashboard";
 import VeterinarioPerfilPage from "./pages/veterinario/VeterinarioPerfilPage";
+import AgendaPage from "./pages/veterinario/AgendaPage";
 import AguardandoAprovacaoPage from "./pages/veterinario/AguardandoAprovacaoPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import EscolherPerfilPage from "./pages/auth/EscolherPerfilPage";
@@ -62,6 +64,7 @@ const App = () => {
               }>
                 <Route index element={<VeterinarioDashboard />} />
                 <Route path="perfil" element={<VeterinarioPerfilPage />} />
+                <Route path="agenda" element={<AgendaPage />} />
                 {/* Adicione outras rotas de veterinário aqui */}
               </Route>
               

@@ -16,6 +16,7 @@ export type Database = {
           created_at: string | null
           data_hora: string
           id: string
+          motivo_cancelamento: string | null
           pet_id: string
           servico_id: string
           status: Database["public"]["Enums"]["agendamento_status"]
@@ -30,6 +31,7 @@ export type Database = {
           created_at?: string | null
           data_hora: string
           id?: string
+          motivo_cancelamento?: string | null
           pet_id: string
           servico_id: string
           status?: Database["public"]["Enums"]["agendamento_status"]
@@ -44,6 +46,7 @@ export type Database = {
           created_at?: string | null
           data_hora?: string
           id?: string
+          motivo_cancelamento?: string | null
           pet_id?: string
           servico_id?: string
           status?: Database["public"]["Enums"]["agendamento_status"]
@@ -76,6 +79,47 @@ export type Database = {
           },
           {
             foreignKeyName: "agendamentos_veterinario_id_fkey"
+            columns: ["veterinario_id"]
+            isOneToOne: false
+            referencedRelation: "veterinarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      disponibilidade_veterinario: {
+        Row: {
+          created_at: string | null
+          dia_semana: number
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          intervalo_minutos: number | null
+          updated_at: string | null
+          veterinario_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dia_semana: number
+          hora_fim: string
+          hora_inicio: string
+          id?: string
+          intervalo_minutos?: number | null
+          updated_at?: string | null
+          veterinario_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dia_semana?: number
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          intervalo_minutos?: number | null
+          updated_at?: string | null
+          veterinario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disponibilidade_veterinario_veterinario_id_fkey"
             columns: ["veterinario_id"]
             isOneToOne: false
             referencedRelation: "veterinarios"

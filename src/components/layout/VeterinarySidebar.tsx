@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Home, Calendar, Settings, User } from "lucide-react";
+import { Home, Calendar, Settings, User, BookOpen } from "lucide-react";
 import SidebarWrapper from './SidebarWrapper';
 import SidebarItem from './SidebarItem';
 
@@ -11,8 +11,9 @@ const VeterinarySidebar = () => {
 
   const menuItems = [
     { icon: Home, title: 'Dashboard', href: '/vet' },
-    { icon: Calendar, title: 'Agendamentos', href: '/vet/appointments' },
-    { icon: User, title: 'Meus Serviços', href: '/vet/services' },
+    { icon: Calendar, title: 'Agenda', href: '/vet/agenda' },
+    { icon: BookOpen, title: 'Meus Serviços', href: '/vet/services' },
+    { icon: User, title: 'Meu Perfil', href: '/vet/perfil' },
     { icon: Settings, title: 'Configurações', href: '/vet/settings' },
   ];
 
