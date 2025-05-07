@@ -39,6 +39,8 @@ const ProcedimentosPage = () => {
     setIsLoading(true);
     try {
       console.log("Buscando procedimentos...");
+      
+      // Usando uma consulta direta ao RPC sem exigir políticas RLS específicas
       const { data, error } = await supabase
         .from('procedimentos')
         .select('*')
@@ -82,6 +84,7 @@ const ProcedimentosPage = () => {
     if (!procedimentoToDelete) return;
 
     try {
+      console.log(`Excluindo procedimento com ID: ${procedimentoToDelete.id}`);
       const { error } = await supabase
         .from('procedimentos')
         .delete()
@@ -92,6 +95,7 @@ const ProcedimentosPage = () => {
         throw error;
       }
       
+      console.log("Procedimento excluído com sucesso");
       setProcedimentos(procedimentos.filter(p => p.id !== procedimentoToDelete.id));
       toast.success('Procedimento removido com sucesso!');
     } catch (error: any) {
