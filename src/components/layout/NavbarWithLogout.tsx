@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -58,11 +57,7 @@ const NavbarWithLogout: React.FC = () => {
   return (
     <div className="flex justify-between items-center p-4 bg-[#E72A4A] text-white">
       <div className="flex items-center">
-        <img 
-          src="https://sq360.com.br/logo-hubb-novo/hubb_pet_icon.png" 
-          alt="HubbPet" 
-          className="h-8 w-8"
-        />
+        {/* Removendo a imagem do logo para evitar duplicação */}
       </div>
       
       <DropdownMenu>
