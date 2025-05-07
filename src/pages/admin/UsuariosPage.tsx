@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Usuario } from '@/shared/types';
@@ -46,34 +47,30 @@ const UsuariosPage = () => {
   const fetchUsuarios = async () => {
     setIsLoading(true);
     try {
-      // Obter todos os usuários do Supabase Auth
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      // Usar a nova função segura para buscar todos os usuários
+      const { data, error } = await supabase.rpc('get_all_users');
       
-      if (authError) throw authError;
-
-      console.log("Usuários autenticados:", authUsers);
+      if (error) throw error;
       
-      // Transformar dados para o formato de Usuário
-      const usuariosData: Usuario[] = authUsers.users.map(user => ({
-        id: user.id,
-        email: user.email || '',
-        nome: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Sem nome',
-        role: user.user_metadata?.role || 'tutor',
-        created_at: user.created_at,
-        telefone: user.user_metadata?.phone || ''
-      }));
-
-      setUsuarios(usuariosData);
-      setFilteredUsuarios(usuariosData);
+      console.log("Usuários obtidos via função RPC:", data);
+      
+      if (data && data.length > 0) {
+        setUsuarios(data);
+        setFilteredUsuarios(data);
+      } else {
+        console.log("Nenhum usuário encontrado via RPC");
+        // Caso não encontre usuários via RPC, tentar o método alternativo
+        fetchUsuariosFromTables();
+      }
     } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
+      console.error('Erro ao buscar usuários via RPC:', error);
       toast({
         title: "Erro",
         description: "Não foi possível carregar a lista de usuários.",
         variant: "destructive",
       });
       
-      // Backup: tentar buscar usuários das tabelas de tutores e veterinários
+      // Tentar o método alternativo em caso de erro
       fetchUsuariosFromTables();
     } finally {
       setIsLoading(false);

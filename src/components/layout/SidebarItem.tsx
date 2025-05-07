@@ -39,7 +39,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
       onClick={handleClick}
     >
       <div className={`
-        flex ${!isExpanded ? 'mx-auto justify-center' : 'mr-3'} items-center
+        flex items-center
+        ${!isExpanded ? 'mx-auto justify-center' : 'mr-3'}
       `}>
         <Icon size={20} />
       </div>
