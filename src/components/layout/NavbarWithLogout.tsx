@@ -56,18 +56,7 @@ const NavbarWithLogout: React.FC = () => {
   };
 
   return (
-    <div className="flex justify-between items-center p-4 bg-[#2D113F] text-white">
-      <div 
-        className="flex items-center cursor-pointer"
-        onClick={() => navigate(getUserHomeRoute())}
-      >
-        <img
-          src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo_CLARO.png"
-          alt="HubbPet"
-          className="h-8 mr-2"
-        />
-      </div>
-      
+    <div className="flex justify-end items-center p-4 bg-[#2D113F] text-white">      
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 

@@ -26,11 +26,15 @@ const AppLayout = ({ userRole, children }: AppLayoutProps) => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <NavbarWithLogout />
       <div className="flex flex-1">
-        {renderSidebar()}
-        <div className="flex-1 p-6 bg-gray-50">
-          {children}
+        <div className="min-h-screen">
+          {renderSidebar()}
+        </div>
+        <div className="flex-1 flex flex-col">
+          <NavbarWithLogout />
+          <div className="flex-1 p-6 bg-gray-50">
+            {children}
+          </div>
         </div>
       </div>
     </div>

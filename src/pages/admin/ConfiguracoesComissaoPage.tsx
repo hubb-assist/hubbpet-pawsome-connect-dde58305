@@ -1,718 +1,460 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle, 
-  CardFooter 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { 
-  PlusCircle, 
-  Pencil, 
-  Trash2, 
-  Save, 
-  X, 
-  RefreshCw 
-} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Loader2, Plus, Trash, Save, X } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 
-// Tipos para evitar erros de TypeScript
 interface Servico {
   id: string;
   nome: string;
+  preco: number;
   descricao: string;
-  preco_base: number;
-  ativo: boolean;
 }
 
 interface ComissaoServico {
   id: string;
   servico_id: string;
   percentual: number;
-  valor_fixo: number;
-  fixa: boolean;
-  servico: {
-    nome: string;
-    descricao: string;
-    preco_base: number;
-  };
+  servico?: Servico;
 }
 
-const ConfiguracoesComissaoPage: React.FC = () => {
-  const [comissoes, setComissoes] = useState<ComissaoServico[]>([]);
-  const [servicos, setServicos] = useState<Servico[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Estado para nova comissão
-  const [novaComissao, setNovaComissao] = useState({
-    servicoId: '',
-    percentual: 10,
-    valorFixo: 20,
-    fixa: false
-  });
-  
-  // Estado para serviço que está sendo editado
-  const [editando, setEditando] = useState<string | null>(null);
-  
-  // Serviço temporário para edição
-  const [servicoTemp, setServicoTemp] = useState<Servico | null>(null);
-  
-  // Estado para controle de modal/form
-  const [showNovaComissaoForm, setShowNovaComissaoForm] = useState(false);
-  const [showNovoServicoForm, setShowNovoServicoForm] = useState(false);
-  
-  const { toast } = useToast();
+const formSchema = z.object({
+  servico_id: z.string().nonempty("Por favor selecione um serviço"),
+  percentual: z.coerce.number().min(0).max(100),
+});
 
-  // Carregar dados
+const ConfiguracoesComissaoPage = () => {
+  const { toast } = useToast();
+  const [comissaoGlobal, setComissaoGlobal] = useState<number>(10);
+  const [comissoesServicos, setComissoesServicos] = useState<ComissaoServico[]>([]);
+  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingComissaoGlobal, setIsLoadingComissaoGlobal] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      servico_id: "",
+      percentual: 10,
+    },
+  });
+
   useEffect(() => {
-    const fetchDados = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Carregar comissões
+        // Buscar comissão global
+        const { data: configData, error: configError } = await supabase
+          .from('admin_configuracoes')
+          .select('comissao_padrao')
+          .single();
+
+        if (configError) {
+          console.error("Erro ao buscar configurações:", configError);
+        } else if (configData) {
+          setComissaoGlobal(configData.comissao_padrao);
+        }
+
+        // Buscar comissões específicas por serviço
         const { data: comissoesData, error: comissoesError } = await supabase
-          .from('comissoes')
+          .from('comissoes_servicos')
           .select(`
-            *,
-            servico:servico_id (
+            id,
+            servico_id,
+            percentual,
+            servicos (
+              id,
               nome,
-              descricao,
-              preco_base
+              preco,
+              descricao
             )
-          `)
-          .order('created_at', { ascending: false });
-          
-        if (comissoesError) throw comissoesError;
-        
-        // Conversão explícita para satisfazer o TypeScript
-        setComissoes(comissoesData as unknown as ComissaoServico[]);
-        
-        // Carregar serviços
+          `);
+
+        if (comissoesError) {
+          console.error("Erro ao buscar comissões:", comissoesError);
+        } else if (comissoesData) {
+          // Mapear os dados para o formato esperado
+          const comissoes = comissoesData.map(item => ({
+            id: item.id,
+            servico_id: item.servico_id,
+            percentual: item.percentual,
+            servico: item.servicos as Servico
+          }));
+          setComissoesServicos(comissoes);
+        }
+
+        // Buscar todos os serviços
         const { data: servicosData, error: servicosError } = await supabase
           .from('servicos')
-          .select('*')
-          .order('nome', { ascending: true });
-          
-        if (servicosError) throw servicosError;
-        
-        // Conversão explícita para satisfazer o TypeScript
-        setServicos(servicosData as unknown as Servico[]);
-        
-      } catch (error: any) {
-        console.error('Erro ao carregar dados:', error);
+          .select('*');
+
+        if (servicosError) {
+          console.error("Erro ao buscar serviços:", servicosError);
+        } else if (servicosData) {
+          setServicos(servicosData as Servico[]);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
         toast({
+          variant: "destructive",
           title: "Erro",
-          description: "Não foi possível carregar os dados.",
-          variant: "destructive"
+          description: "Falha ao carregar as configurações de comissão."
         });
       } finally {
         setIsLoading(false);
       }
     };
-    
-    fetchDados();
+
+    fetchData();
   }, [toast]);
 
-  // Salvar nova comissão
-  const handleSalvarNovaComissao = async () => {
-    if (!novaComissao.servicoId) {
-      toast({
-        title: "Erro",
-        description: "Selecione um serviço.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
+  const handleUpdateComissaoGlobal = async () => {
+    setIsLoadingComissaoGlobal(true);
     try {
-      const valorAtual = novaComissao.fixa ? novaComissao.valorFixo : novaComissao.percentual;
-      
-      const { data, error } = await supabase
-        .from('comissoes')
-        .insert({
-          servico_id: novaComissao.servicoId,
-          percentual: novaComissao.fixa ? 0 : novaComissao.percentual,
-          valor_fixo: novaComissao.fixa ? novaComissao.valorFixo : 0,
-          fixa: novaComissao.fixa
-        })
-        .select(`
-          *,
-          servico:servico_id (
-            nome,
-            descricao,
-            preco_base
-          )
-        `)
-        .single();
-        
-      if (error) throw error;
-      
-      // Adicionar nova comissão à lista
-      setComissoes([data as unknown as ComissaoServico, ...comissoes]);
-      
-      // Reset form
-      setNovaComissao({
-        servicoId: '',
-        percentual: 10,
-        valorFixo: 20,
-        fixa: false
-      });
-      setShowNovaComissaoForm(false);
-      
+      const { error } = await supabase
+        .from('admin_configuracoes')
+        .update({ comissao_padrao: comissaoGlobal })
+        .eq('id', 1); // Assumindo que há um registro com ID 1
+
+      if (error) {
+        throw error;
+      }
+
       toast({
-        title: "Comissão adicionada",
-        description: `Comissão para o serviço foi adicionada com sucesso.`,
+        title: "Comissão global atualizada",
+        description: `A comissão global foi definida para ${comissaoGlobal}%.`
       });
-    } catch (error: any) {
-      console.error('Erro ao adicionar comissão:', error);
+    } catch (error) {
+      console.error("Erro ao atualizar comissão global:", error);
       toast({
+        variant: "destructive",
         title: "Erro",
-        description: error.message || "Não foi possível adicionar a comissão.",
-        variant: "destructive"
+        description: "Falha ao atualizar comissão global."
       });
+    } finally {
+      setIsLoadingComissaoGlobal(false);
     }
   };
 
-  // Atualizar comissão
-  const handleAtualizarComissao = async (comissaoId: string, campo: string, valor: any) => {
+  const handleDeleteComissao = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('comissoes')
-        .update({ [campo]: valor })
-        .eq('id', comissaoId);
-        
-      if (error) throw error;
-      
-      // Atualizar estado local
-      setComissoes(comissoes.map(c => {
-        if (c.id === comissaoId) {
-          return { ...c, [campo]: valor };
-        }
-        return c;
-      }));
-      
-      toast({
-        title: "Comissão atualizada",
-        description: "A comissão foi atualizada com sucesso.",
-      });
-    } catch (error: any) {
-      console.error('Erro ao atualizar comissão:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar a comissão.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Remover comissão
-  const handleRemoverComissao = async (comissaoId: string) => {
-    if (!window.confirm('Tem certeza que deseja remover esta comissão?')) {
-      return;
-    }
-    
-    try {
-      const { error } = await supabase
-        .from('comissoes')
+        .from('comissoes_servicos')
         .delete()
-        .eq('id', comissaoId);
-        
-      if (error) throw error;
-      
-      // Atualizar estado local
-      setComissoes(comissoes.filter(c => c.id !== comissaoId));
-      
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      setComissoesServicos(prevComissoes => prevComissoes.filter(comissao => comissao.id !== id));
       toast({
         title: "Comissão removida",
-        description: "A comissão foi removida com sucesso.",
+        description: "A comissão por serviço foi removida com sucesso."
       });
-    } catch (error: any) {
-      console.error('Erro ao remover comissão:', error);
+    } catch (error) {
+      console.error("Erro ao excluir comissão:", error);
       toast({
+        variant: "destructive",
         title: "Erro",
-        description: "Não foi possível remover a comissão.",
-        variant: "destructive"
+        description: "Falha ao remover comissão por serviço."
       });
     }
   };
 
-  // Adicionar novo serviço
-  const handleAdicionarServico = async () => {
-    if (!servicoTemp?.nome || !servicoTemp.preco_base) {
-      toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const { data, error } = await supabase
-        .from('servicos')
-        .insert({
-          nome: servicoTemp.nome,
-          descricao: servicoTemp.descricao || '',
-          preco_base: servicoTemp.preco_base,
-          ativo: true
-        })
-        .select()
-        .single();
+      // Verificar se já existe uma comissão para este serviço
+      const comissaoExistente = comissoesServicos.find(c => c.servico_id === values.servico_id);
+      
+      if (comissaoExistente) {
+        // Atualizar comissão existente
+        const { error } = await supabase
+          .from('comissoes_servicos')
+          .update({ percentual: values.percentual })
+          .eq('id', comissaoExistente.id);
+          
+        if (error) throw error;
         
-      if (error) throw error;
-      
-      // Adicionar novo serviço à lista
-      setServicos([...servicos, data as Servico]);
-      
-      // Reset form
-      setServicoTemp(null);
-      setShowNovoServicoForm(false);
-      
-      toast({
-        title: "Serviço adicionado",
-        description: `O serviço "${data.nome}" foi adicionado com sucesso.`,
-      });
-    } catch (error: any) {
-      console.error('Erro ao adicionar serviço:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível adicionar o serviço.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Iniciar edição de serviço
-  const handleIniciarEdicaoServico = (servico: Servico) => {
-    setServicoTemp({ ...servico });
-    setEditando(servico.id);
-  };
-
-  // Salvar serviço editado
-  const handleSalvarServicoEditado = async () => {
-    if (!servicoTemp || !editando) return;
-    
-    try {
-      const { error } = await supabase
-        .from('servicos')
-        .update({
-          nome: servicoTemp.nome,
-          descricao: servicoTemp.descricao,
-          preco_base: servicoTemp.preco_base,
-          ativo: servicoTemp.ativo
-        })
-        .eq('id', editando);
+        // Atualizar a lista local
+        setComissoesServicos(prev => prev.map(c => {
+          if (c.id === comissaoExistente.id) {
+            return { ...c, percentual: values.percentual };
+          }
+          return c;
+        }));
         
-      if (error) throw error;
-      
-      // Atualizar estado local
-      setServicos(servicos.map(s => {
-        if (s.id === editando) {
-          return servicoTemp;
+        toast({
+          title: "Comissão atualizada",
+          description: "A comissão do serviço foi atualizada com sucesso."
+        });
+      } else {
+        // Criar nova comissão
+        const { data, error } = await supabase
+          .from('comissoes_servicos')
+          .insert({
+            servico_id: values.servico_id,
+            percentual: values.percentual
+          })
+          .select(`
+            id,
+            servico_id,
+            percentual
+          `)
+          .single();
+          
+        if (error) throw error;
+        
+        // Buscar dados do serviço para exibição
+        const servico = servicos.find(s => s.id === values.servico_id);
+        
+        if (data && servico) {
+          const novaComissao = {
+            ...data,
+            servico
+          };
+          
+          setComissoesServicos(prev => [...prev, novaComissao]);
+          toast({
+            title: "Comissão criada",
+            description: "Nova comissão por serviço adicionada com sucesso."
+          });
         }
-        return s;
-      }));
+      }
       
-      // Reset edit mode
-      setEditando(null);
-      setServicoTemp(null);
-      
+      setOpenDialog(false);
+      form.reset();
+    } catch (error) {
+      console.error("Erro ao salvar comissão:", error);
       toast({
-        title: "Serviço atualizado",
-        description: `O serviço "${servicoTemp.nome}" foi atualizado com sucesso.`,
-      });
-    } catch (error: any) {
-      console.error('Erro ao atualizar serviço:', error);
-      toast({
+        variant: "destructive",
         title: "Erro",
-        description: "Não foi possível atualizar o serviço.",
-        variant: "destructive"
+        description: "Falha ao salvar comissão por serviço."
       });
     }
   };
 
-  // Cancelar edição
-  const handleCancelarEdicao = () => {
-    setEditando(null);
-    setServicoTemp(null);
-  };
+  // Filtra os serviços que não têm comissões específicas
+  const servicosDisponiveis = servicos.filter(servico => 
+    !comissoesServicos.some(comissao => comissao.servico_id === servico.id)
+  );
 
-  // Formatação de moeda
-  const formatarMoeda = (valor: number) => {
-    return valor.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    });
+  const getServicoById = (id: string) => {
+    return servicos.find(servico => servico.id === id);
   };
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Configurações de Comissões</h1>
+      <h1 className="text-2xl font-bold mb-6">Configurações de Comissão</h1>
+      
+      {isLoading ? (
+        <div className="flex justify-center items-center h-40">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Comissão Global</CardTitle>
+              <CardDescription>
+                Define a porcentagem padrão de comissão para todos os serviços
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end gap-4">
+                <div className="w-full max-w-xs">
+                  <label htmlFor="comissaoGlobal" className="block text-sm font-medium mb-1">
+                    Percentual (%)
+                  </label>
+                  <Input
+                    id="comissaoGlobal"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={comissaoGlobal}
+                    onChange={(e) => setComissaoGlobal(Number(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+                <Button 
+                  onClick={handleUpdateComissaoGlobal}
+                  disabled={isLoadingComissaoGlobal}
+                >
+                  {isLoadingComissaoGlobal ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Salvar
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-      <Tabs defaultValue="comissoes">
-        <TabsList className="mb-4">
-          <TabsTrigger value="comissoes">Comissões</TabsTrigger>
-          <TabsTrigger value="servicos">Serviços</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="comissoes">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Comissões por Serviço</CardTitle>
                 <CardDescription>
-                  Gerencie as comissões da plataforma para cada tipo de serviço
+                  Define comissões específicas para determinados serviços
                 </CardDescription>
               </div>
-              <Button onClick={() => setShowNovaComissaoForm(!showNovaComissaoForm)}>
-                {showNovaComissaoForm ? <X className="h-4 w-4 mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
-                {showNovaComissaoForm ? 'Cancelar' : 'Nova Comissão'}
-              </Button>
+              <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nova Comissão
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Adicionar Comissão por Serviço</DialogTitle>
+                    <DialogDescription>
+                      Defina uma comissão específica para um serviço.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="servico_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Serviço</FormLabel>
+                            <FormControl>
+                              <select
+                                className="w-full p-2 border border-gray-300 rounded-md"
+                                {...field}
+                              >
+                                <option value="">Selecione um serviço</option>
+                                {servicos.map((servico) => (
+                                  <option key={servico.id} value={servico.id}>
+                                    {servico.nome} - R$ {servico.preco.toFixed(2)}
+                                  </option>
+                                ))}
+                              </select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="percentual"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Percentual (%)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Percentual da comissão entre 0 e 100%.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
+                          <X className="mr-2 h-4 w-4" />
+                          Cancelar
+                        </Button>
+                        <Button type="submit">
+                          <Save className="mr-2 h-4 w-4" />
+                          Salvar
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
             </CardHeader>
             <CardContent>
-              {showNovaComissaoForm && (
-                <Card className="mb-6 bg-gray-50">
-                  <CardHeader>
-                    <CardTitle>Nova Comissão</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="servicoId">Serviço</Label>
-                        <select 
-                          id="servicoId"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          value={novaComissao.servicoId}
-                          onChange={(e) => setNovaComissao({...novaComissao, servicoId: e.target.value})}
-                        >
-                          <option value="">Selecione um serviço</option>
-                          {servicos.map(servico => (
-                            <option key={servico.id} value={servico.id}>
-                              {servico.nome} - {formatarMoeda(servico.preco_base)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <div className="flex items-center space-x-2 mb-4">
-                          <Switch 
-                            id="tipoComissao" 
-                            checked={novaComissao.fixa}
-                            onCheckedChange={(checked) => setNovaComissao({...novaComissao, fixa: checked})}
-                          />
-                          <Label htmlFor="tipoComissao">
-                            {novaComissao.fixa ? 'Valor Fixo' : 'Percentual'}
-                          </Label>
-                        </div>
-                        
-                        {novaComissao.fixa ? (
-                          <div>
-                            <Label htmlFor="valorFixo">Valor Fixo (R$)</Label>
-                            <Input 
-                              id="valorFixo"
-                              type="number" 
-                              min="0"
-                              step="0.01"
-                              value={novaComissao.valorFixo}
-                              onChange={(e) => setNovaComissao({
-                                ...novaComissao, 
-                                valorFixo: parseFloat(e.target.value) || 0
-                              })}
-                            />
-                          </div>
-                        ) : (
-                          <div>
-                            <Label htmlFor="percentual">Percentual (%)</Label>
-                            <Input 
-                              id="percentual"
-                              type="number" 
-                              min="0"
-                              max="100"
-                              value={novaComissao.percentual}
-                              onChange={(e) => setNovaComissao({
-                                ...novaComissao, 
-                                percentual: parseFloat(e.target.value) || 0
-                              })}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-end">
-                    <Button 
-                      variant="outline" 
-                      className="mr-2"
-                      onClick={() => setShowNovaComissaoForm(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleSalvarNovaComissao}>
-                      Salvar Comissão
-                    </Button>
-                  </CardFooter>
-                </Card>
-              )}
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Serviço</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {comissoes.length > 0 ? (
-                    comissoes.map(comissao => (
+              {comissoesServicos.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Serviço</TableHead>
+                      <TableHead>Preço</TableHead>
+                      <TableHead>Comissão (%)</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {comissoesServicos.map((comissao) => (
                       <TableRow key={comissao.id}>
                         <TableCell className="font-medium">
-                          {comissao.servico?.nome || 'Serviço não encontrado'}
-                          <div className="text-xs text-gray-500">
-                            Preço base: {formatarMoeda(comissao.servico?.preco_base || 0)}
-                          </div>
+                          {comissao.servico?.nome ?? "Serviço não encontrado"}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={comissao.fixa ? 'outline' : 'default'}>
-                            {comissao.fixa ? 'Valor Fixo' : 'Percentual'}
-                          </Badge>
+                          {comissao.servico ? `R$ ${comissao.servico.preco.toFixed(2)}` : "N/A"}
                         </TableCell>
-                        <TableCell>
-                          {comissao.fixa 
-                            ? formatarMoeda(comissao.valor_fixo) 
-                            : `${comissao.percentual}%`}
-                        </TableCell>
+                        <TableCell>{comissao.percentual}%</TableCell>
                         <TableCell className="text-right">
                           <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleRemoverComissao(comissao.id)}
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => handleDeleteComissao(comissao.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-gray-500">
-                        Nenhuma comissão cadastrada.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button 
-                variant="outline" 
-                onClick={() => window.location.reload()}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Atualizar Lista
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="servicos">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Serviços Disponíveis</CardTitle>
-                <CardDescription>
-                  Gerencie os tipos de serviços disponíveis na plataforma
-                </CardDescription>
-              </div>
-              <Button onClick={() => {
-                setServicoTemp({ id: '', nome: '', descricao: '', preco_base: 0, ativo: true });
-                setShowNovoServicoForm(!showNovoServicoForm);
-              }}>
-                {showNovoServicoForm ? <X className="h-4 w-4 mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
-                {showNovoServicoForm ? 'Cancelar' : 'Novo Serviço'}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {showNovoServicoForm && (
-                <Card className="mb-6 bg-gray-50">
-                  <CardHeader>
-                    <CardTitle>Novo Serviço</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="nome">Nome do Serviço</Label>
-                        <Input 
-                          id="nome"
-                          value={servicoTemp?.nome || ''}
-                          onChange={(e) => servicoTemp && setServicoTemp({...servicoTemp, nome: e.target.value})}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="descricao">Descrição</Label>
-                        <Input 
-                          id="descricao"
-                          value={servicoTemp?.descricao || ''}
-                          onChange={(e) => servicoTemp && setServicoTemp({...servicoTemp, descricao: e.target.value})}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="preco">Preço Base (R$)</Label>
-                        <Input 
-                          id="preco"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={servicoTemp?.preco_base || 0}
-                          onChange={(e) => servicoTemp && setServicoTemp({
-                            ...servicoTemp, 
-                            preco_base: parseFloat(e.target.value) || 0
-                          })}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-end">
-                    <Button 
-                      variant="outline" 
-                      className="mr-2"
-                      onClick={() => {
-                        setServicoTemp(null);
-                        setShowNovoServicoForm(false);
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleAdicionarServico}>
-                      Salvar Serviço
-                    </Button>
-                  </CardFooter>
-                </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  Nenhuma comissão específica configurada. A comissão global será aplicada a todos os serviços.
+                </div>
               )}
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Preço Base</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {servicos.length > 0 ? (
-                    servicos.map(servico => (
-                      <TableRow key={servico.id}>
-                        {editando === servico.id ? (
-                          <>
-                            <TableCell>
-                              <Input 
-                                value={servicoTemp?.nome || ''}
-                                onChange={(e) => servicoTemp && setServicoTemp({...servicoTemp, nome: e.target.value})}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input 
-                                value={servicoTemp?.descricao || ''}
-                                onChange={(e) => servicoTemp && setServicoTemp({...servicoTemp, descricao: e.target.value})}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input 
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={servicoTemp?.preco_base || 0}
-                                onChange={(e) => servicoTemp && setServicoTemp({
-                                  ...servicoTemp, 
-                                  preco_base: parseFloat(e.target.value) || 0
-                                })}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                <Switch 
-                                  checked={servicoTemp?.ativo || false}
-                                  onCheckedChange={(checked) => servicoTemp && setServicoTemp({...servicoTemp, ativo: checked})}
-                                />
-                                <Label>{servicoTemp?.ativo ? 'Ativo' : 'Inativo'}</Label>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right space-x-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={handleSalvarServicoEditado}
-                              >
-                                <Save className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={handleCancelarEdicao}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell className="font-medium">{servico.nome}</TableCell>
-                            <TableCell>{servico.descricao || '-'}</TableCell>
-                            <TableCell>{formatarMoeda(servico.preco_base)}</TableCell>
-                            <TableCell>
-                              <Badge variant={servico.ativo ? 'default' : 'secondary'}>
-                                {servico.ativo ? 'Ativo' : 'Inativo'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right space-x-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleIniciarEdicaoServico(servico)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </>
-                        )}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4 text-gray-500">
-                        Nenhum serviço cadastrado.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 };
