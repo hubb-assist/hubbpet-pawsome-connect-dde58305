@@ -45,7 +45,22 @@ const PetsPage = () => {
       
       if (error) throw error;
       
-      setPets(data || []);
+      // Converter os dados recebidos do Supabase para o formato esperado por Pet
+      const formattedPets: Pet[] = data?.map(pet => ({
+        id: pet.id,
+        name: pet.nome,
+        type: pet.especie === 'cachorro' ? 'dog' : 
+              pet.especie === 'gato' ? 'cat' :
+              pet.especie === 'passaro' ? 'bird' :
+              pet.especie === 'reptil' ? 'reptile' : 'other',
+        breed: pet.raca || '',
+        birthdate: pet.data_nascimento ? new Date(pet.data_nascimento) : undefined,
+        tutorId: pet.tutor_id,
+        createdAt: new Date(pet.created_at),
+        updatedAt: new Date(pet.updated_at)
+      })) || [];
+      
+      setPets(formattedPets);
     } catch (error: any) {
       console.error('Erro ao buscar pets:', error.message);
       toast({

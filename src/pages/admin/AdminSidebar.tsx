@@ -8,7 +8,8 @@ import {
   Settings, 
   Shield, 
   DollarSign, 
-  MessageSquare 
+  MessageSquare,
+  FileText 
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -21,9 +22,19 @@ const AdminSidebar = () => {
       label: 'Dashboard'
     },
     {
+      path: '/admin/usuarios',
+      icon: <Users size={20} />,
+      label: 'Usuários'
+    },
+    {
       path: '/admin/veterinarios',
       icon: <Users size={20} />,
       label: 'Aprovar Vets'
+    },
+    {
+      path: '/admin/procedimentos',
+      icon: <FileText size={20} />,
+      label: 'Procedimentos'
     },
     {
       path: '/admin/conflitos',
@@ -44,7 +55,7 @@ const AdminSidebar = () => {
   
   return (
     <div className="bg-white border-r min-h-screen w-64 p-4 flex flex-col shadow-sm">
-      <div className="py-2 flex items-center gap-2 px-4 mb-6">
+      <div className="py-2 flex items-center justify-center gap-2 px-4 mb-6">
         <Shield className="h-6 w-6 text-[#2D113F]" />
         <h2 className="text-xl font-bold text-[#2D113F]">Admin</h2>
       </div>

@@ -86,7 +86,7 @@ const TutorProfilePage = () => {
           cep: data.cep,
           cidade: data.cidade,
           estado: data.estado,
-          updated_at: new Date()
+          updated_at: new Date().toISOString() // Corrigido: convertendo para string ISO
         });
       
       if (error) {
