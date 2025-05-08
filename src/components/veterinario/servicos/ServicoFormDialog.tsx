@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
@@ -43,10 +44,55 @@ const ServicoFormDialog = ({
   const [duracaoMinutos, setDuracaoMinutos] = useState('30');
   const [selectedProcedimentos, setSelectedProcedimentos] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [veterinarioId, setVeterinarioId] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Buscar o ID do registro do veterinário baseado no ID do usuário autenticado
+  const { data: veterinario, isLoading: isLoadingVeterinario } = useQuery({
+    queryKey: ['veterinario-perfil'],
+    queryFn: async () => {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        console.error("Erro ao obter usuário:", userError);
+        throw new Error("Usuário não autenticado");
+      }
+      
+      const { data, error } = await supabase
+        .from('veterinarios')
+        .select('id')
+        .eq('user_id', userData.user.id)
+        .single();
+        
+      if (error) {
+        console.error("Erro ao obter perfil do veterinário:", error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error("Perfil de veterinário não encontrado");
+      }
+      
+      return data;
+    },
+    meta: {
+      onSuccess: (data) => {
+        console.log("ID do veterinário obtido com sucesso:", data.id);
+        setVeterinarioId(data.id);
+      },
+      onError: (error: any) => {
+        console.error("Erro ao buscar perfil do veterinário:", error);
+        toast({
+          title: "Erro ao carregar perfil",
+          description: "Não foi possível carregar seu perfil de veterinário.",
+          variant: "destructive"
+        });
+      }
+    }
+  });
+
   // Buscar todos os procedimentos disponíveis
-  const { data: procedimentos, isLoading } = useQuery({
+  const { data: procedimentos, isLoading: isLoadingProcedimentos } = useQuery({
     queryKey: ['procedimentos-cadastrados'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -129,21 +175,22 @@ const ServicoFormDialog = ({
       return;
     }
 
+    if (!veterinarioId) {
+      toast({
+        title: "Perfil não encontrado",
+        description: "Não foi possível identificar seu perfil de veterinário.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
       const precoNumerico = parseFloat(preco);
       const duracaoNumerica = parseInt(duracaoMinutos);
-
-      // Obter o ID do veterinário atual (usuário autenticado)
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      if (userError || !user) {
-        console.error("Erro ao obter usuário:", userError);
-        throw new Error("Usuário não autenticado");
-      }
-
-      console.log("User ID para inserção de serviço:", user.id);
+      console.log("ID do veterinário para inserção de serviço:", veterinarioId);
       
       let servicoId;
 
@@ -183,7 +230,7 @@ const ServicoFormDialog = ({
 
       } else {
         // Criar novo serviço
-        console.log("Criando novo serviço para veterinário:", user.id);
+        console.log("Criando novo serviço para veterinário:", veterinarioId);
         const { data, error } = await supabase
           .from('servicos')
           .insert({
@@ -191,7 +238,7 @@ const ServicoFormDialog = ({
             descricao: descricao || null,
             preco: precoNumerico,
             duracao_minutos: duracaoNumerica,
-            veterinario_id: user.id
+            veterinario_id: veterinarioId
           })
           .select('id')
           .single();
@@ -268,6 +315,8 @@ const ServicoFormDialog = ({
     });
   };
 
+  const isLoading = isLoadingVeterinario || isLoadingProcedimentos;
+
   return (
     <Sheet open={isOpen} onOpenChange={() => onClose()}>
       <SheetContent className="sm:max-w-md md:max-w-lg overflow-y-auto">
@@ -280,136 +329,143 @@ const ServicoFormDialog = ({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="nome">Nome do Serviço</Label>
-            <Input
-              id="nome"
-              placeholder="Ex: Consulta de Rotina"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-            />
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-[#DD6B20]" />
+            <span className="ml-2 text-gray-600">Carregando informações...</span>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição (opcional)</Label>
-            <Textarea
-              id="descricao"
-              placeholder="Descreva o serviço..."
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        ) : (
+          <div className="mt-6 space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="preco">Preço (R$)</Label>
+              <Label htmlFor="nome">Nome do Serviço</Label>
               <Input
-                id="preco"
-                type="text"
-                placeholder="0,00"
-                value={preco}
-                onChange={handlePrecoChange}
+                id="nome"
+                placeholder="Ex: Consulta de Rotina"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="duracao">Duração (minutos)</Label>
-              <Select 
-                value={duracaoMinutos} 
-                onValueChange={setDuracaoMinutos}
-              >
-                <SelectTrigger id="duracao">
-                  <SelectValue placeholder="Selecione a duração" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="15">15 minutos</SelectItem>
-                  <SelectItem value="30">30 minutos</SelectItem>
-                  <SelectItem value="45">45 minutos</SelectItem>
-                  <SelectItem value="60">1 hora</SelectItem>
-                  <SelectItem value="90">1 hora e 30 minutos</SelectItem>
-                  <SelectItem value="120">2 horas</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="descricao">Descrição (opcional)</Label>
+              <Textarea
+                id="descricao"
+                placeholder="Descreva o serviço..."
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                rows={3}
+              />
             </div>
-          </div>
 
-          {preco && !isNaN(parseFloat(preco)) && parseFloat(preco) > 0 && (
-            <div className="bg-gray-50 p-4 rounded-md">
-              <div className="text-sm font-medium mb-2">Simulação financeira</div>
-              <div className="grid grid-cols-1 gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Valor bruto:</span>
-                  <span className="font-semibold">{formatCurrency(parseFloat(preco) || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Comissão ({comissaoGlobal}%):</span>
-                  <span className="text-red-500">- {formatCurrency(calcularValorComissao())}</span>
-                </div>
-                <div className="border-t pt-2 flex justify-between">
-                  <span>Valor líquido:</span>
-                  <span className="font-bold text-green-600">{formatCurrency(calcularValorLiquido())}</span>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="preco">Preço (R$)</Label>
+                <Input
+                  id="preco"
+                  type="text"
+                  placeholder="0,00"
+                  value={preco}
+                  onChange={handlePrecoChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="duracao">Duração (minutos)</Label>
+                <Select 
+                  value={duracaoMinutos} 
+                  onValueChange={setDuracaoMinutos}
+                >
+                  <SelectTrigger id="duracao">
+                    <SelectValue placeholder="Selecione a duração" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15 minutos</SelectItem>
+                    <SelectItem value="30">30 minutos</SelectItem>
+                    <SelectItem value="45">45 minutos</SelectItem>
+                    <SelectItem value="60">1 hora</SelectItem>
+                    <SelectItem value="90">1 hora e 30 minutos</SelectItem>
+                    <SelectItem value="120">2 horas</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label>Procedimentos Incluídos</Label>
-            {isLoading ? (
-              <div className="flex justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
-              </div>
-            ) : procedimentos && procedimentos.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                {procedimentos.map((procedimento) => (
-                  <div 
-                    key={procedimento.id} 
-                    className={`
-                      relative flex items-center border rounded-md p-3 cursor-pointer transition-colors
-                      ${selectedProcedimentos.includes(procedimento.id) 
-                        ? 'bg-[#DD6B20]/10 border-[#DD6B20]' 
-                        : 'hover:bg-gray-50 border-gray-200'}
-                    `}
-                    onClick={() => toggleProcedimento(procedimento.id)}
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{procedimento.nome}</div>
-                      {procedimento.descricao && (
-                        <div className="text-xs text-gray-500">{procedimento.descricao}</div>
-                      )}
-                    </div>
-                    <div className="ml-2">
-                      {selectedProcedimentos.includes(procedimento.id) && (
-                        <div className="h-5 w-5 rounded-full bg-[#DD6B20] flex items-center justify-center text-white">
-                          <Check className="h-3 w-3" />
-                        </div>
-                      )}
-                    </div>
+            {preco && !isNaN(parseFloat(preco)) && parseFloat(preco) > 0 && (
+              <div className="bg-gray-50 p-4 rounded-md">
+                <div className="text-sm font-medium mb-2">Simulação financeira</div>
+                <div className="grid grid-cols-1 gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Valor bruto:</span>
+                    <span className="font-semibold">{formatCurrency(parseFloat(preco) || 0)}</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4 text-gray-500">
-                Nenhum procedimento cadastrado.
+                  <div className="flex justify-between">
+                    <span>Comissão ({comissaoGlobal}%):</span>
+                    <span className="text-red-500">- {formatCurrency(calcularValorComissao())}</span>
+                  </div>
+                  <div className="border-t pt-2 flex justify-between">
+                    <span>Valor líquido:</span>
+                    <span className="font-bold text-green-600">{formatCurrency(calcularValorLiquido())}</span>
+                  </div>
+                </div>
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label>Procedimentos Incluídos</Label>
+              {isLoadingProcedimentos ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+                </div>
+              ) : procedimentos && procedimentos.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                  {procedimentos.map((procedimento) => (
+                    <div 
+                      key={procedimento.id} 
+                      className={`
+                        relative flex items-center border rounded-md p-3 cursor-pointer transition-colors
+                        ${selectedProcedimentos.includes(procedimento.id) 
+                          ? 'bg-[#DD6B20]/10 border-[#DD6B20]' 
+                          : 'hover:bg-gray-50 border-gray-200'}
+                      `}
+                      onClick={() => toggleProcedimento(procedimento.id)}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{procedimento.nome}</div>
+                        {procedimento.descricao && (
+                          <div className="text-xs text-gray-500">{procedimento.descricao}</div>
+                        )}
+                      </div>
+                      <div className="ml-2">
+                        {selectedProcedimentos.includes(procedimento.id) && (
+                          <div className="h-5 w-5 rounded-full bg-[#DD6B20] flex items-center justify-center text-white">
+                            <Check className="h-3 w-3" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  Nenhum procedimento cadastrado.
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <SheetFooter className="mt-6 flex gap-2 flex-row sm:justify-end">
           <Button 
             variant="outline" 
             onClick={() => onClose()}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
           >
             <X className="mr-2 h-4 w-4" />
             Cancelar
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading || !veterinarioId}
             className="bg-[#DD6B20] hover:bg-[#DD6B20]/90"
           >
             {isSubmitting ? (
