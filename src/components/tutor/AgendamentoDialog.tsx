@@ -352,14 +352,37 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
         }, 1000);
         return;
       }
+
+      // Buscar o ID real do tutor na tabela tutores
+      const { data: tutor, error: tutorError } = await supabase
+        .from('tutores')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
       
-      // Criar agendamento
+      if (tutorError) {
+        console.error('Erro ao buscar ID do tutor para agendamento:', tutorError);
+        toast("Erro ao agendar", {
+          description: "Não foi possível identificar seu perfil de tutor. Tente novamente ou entre em contato com suporte.",
+        });
+        return;
+      }
+      
+      if (!tutor?.id) {
+        console.error('ID do tutor não encontrado para agendamento');
+        toast("Erro ao agendar", {
+          description: "Perfil de tutor não encontrado. Entre em contato com suporte.",
+        });
+        return;
+      }
+      
+      // Criar agendamento usando o tutor.id correto
       const { data, error } = await supabase
         .from('agendamentos')
         .insert([{
           servico_id: servicoId,
           veterinario_id: veterinarioId,
-          tutor_id: user?.id,
+          tutor_id: tutor.id, // Usando o ID correto da tabela tutores
           pet_id: values.petId,
           data_hora: dataHoraStr,
           status: 'pendente',
