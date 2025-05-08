@@ -30,13 +30,15 @@ interface ServicoFormDialogProps {
   onClose: (shouldRefresh?: boolean) => void;
   servicoToEdit: any | null;
   comissaoGlobal: number;
+  veterinarioId?: string; // Adicionando como opcional para compatibilidade
 }
 
 const ServicoFormDialog = ({ 
   isOpen, 
   onClose, 
   servicoToEdit, 
-  comissaoGlobal 
+  comissaoGlobal,
+  veterinarioId: propVeterinarioId 
 }: ServicoFormDialogProps) => {
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -44,37 +46,75 @@ const ServicoFormDialog = ({
   const [duracaoMinutos, setDuracaoMinutos] = useState('30');
   const [selectedProcedimentos, setSelectedProcedimentos] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [veterinarioId, setVeterinarioId] = useState<string | null>(null);
+  const [veterinarioId, setVeterinarioId] = useState<string | null>(propVeterinarioId || null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Buscar o ID do registro do veterinário baseado no ID do usuário autenticado
+  // apenas se não recebermos o veterinarioId como prop
   const { data: veterinario, isLoading: isLoadingVeterinario } = useQuery({
-    queryKey: ['veterinario-perfil'],
+    queryKey: ['veterinario-perfil', propVeterinarioId],
     queryFn: async () => {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !userData.user) {
-        console.error("Erro ao obter usuário:", userError);
-        throw new Error("Usuário não autenticado");
+      // Se já temos o ID do veterinário como prop, não precisamos buscar
+      if (propVeterinarioId) {
+        console.log("Usando veterinarioId da prop:", propVeterinarioId);
+        return { id: propVeterinarioId };
       }
       
-      const { data, error } = await supabase
-        .from('veterinarios')
-        .select('id')
-        .eq('user_id', userData.user.id)
-        .single();
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
         
-      if (error) {
-        console.error("Erro ao obter perfil do veterinário:", error);
+        if (userError) {
+          console.error("Erro ao obter usuário:", userError);
+          
+          // Verifica se o erro é de refresh token
+          if (userError.message?.includes('Invalid Refresh Token')) {
+            setAuthError('Sua sessão expirou. Por favor, faça login novamente.');
+            try {
+              // Tenta atualizar a sessão
+              const { error: refreshError } = await supabase.auth.refreshSession();
+              if (refreshError) {
+                throw refreshError;
+              }
+            } catch (refreshError) {
+              console.error("Não foi possível renovar a sessão:", refreshError);
+              // Se falhar na renovação, faz logout
+              await supabase.auth.signOut();
+              window.location.href = '/auth';
+              throw new Error("Sessão expirada. Redirecionando para login...");
+            }
+          }
+          
+          throw userError;
+        }
+        
+        if (!userData.user) {
+          throw new Error("Usuário não autenticado");
+        }
+        
+        console.log("Buscando perfil do veterinário para user_id:", userData.user.id);
+        const { data, error } = await supabase
+          .from('veterinarios')
+          .select('id')
+          .eq('user_id', userData.user.id)
+          .single();
+          
+        if (error) {
+          console.error("Erro ao obter perfil do veterinário:", error);
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error("Perfil de veterinário não encontrado");
+        }
+        
+        return data;
+      } catch (error: any) {
+        console.error("Erro completo ao buscar veterinário:", error);
         throw error;
       }
-      
-      if (!data) {
-        throw new Error("Perfil de veterinário não encontrado");
-      }
-      
-      return data;
     },
+    enabled: !propVeterinarioId,
     meta: {
       onSuccess: (data) => {
         console.log("ID do veterinário obtido com sucesso:", data.id);
@@ -95,16 +135,21 @@ const ServicoFormDialog = ({
   const { data: procedimentos, isLoading: isLoadingProcedimentos } = useQuery({
     queryKey: ['procedimentos-cadastrados'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('procedimentos')
-        .select('*')
-        .order('nome');
+      try {
+        const { data, error } = await supabase
+          .from('procedimentos')
+          .select('*')
+          .order('nome');
 
-      if (error) {
-        console.error("Erro ao buscar procedimentos:", error);
+        if (error) {
+          console.error("Erro ao buscar procedimentos:", error);
+          throw error;
+        }
+        return data || [];
+      } catch (error: any) {
+        console.error("Erro completo ao carregar procedimentos:", error);
         throw error;
       }
-      return data || [];
     },
     meta: {
       onError: (error: any) => {
@@ -175,7 +220,10 @@ const ServicoFormDialog = ({
       return;
     }
 
-    if (!veterinarioId) {
+    // Verificar se temos o ID do veterinário
+    const finalVeterinarioId = veterinarioId || propVeterinarioId;
+    
+    if (!finalVeterinarioId) {
       toast({
         title: "Perfil não encontrado",
         description: "Não foi possível identificar seu perfil de veterinário.",
@@ -186,11 +234,12 @@ const ServicoFormDialog = ({
 
     try {
       setIsSubmitting(true);
+      setAuthError(null);
 
       const precoNumerico = parseFloat(preco);
       const duracaoNumerica = parseInt(duracaoMinutos);
       
-      console.log("ID do veterinário para inserção de serviço:", veterinarioId);
+      console.log("ID do veterinário para inserção de serviço:", finalVeterinarioId);
       
       let servicoId;
 
@@ -211,6 +260,25 @@ const ServicoFormDialog = ({
           .single();
 
         if (error) {
+          // Verificar se é erro de autenticação
+          if (error.message?.includes('JWT')) {
+            setAuthError('Sua sessão expirou. Por favor, faça login novamente.');
+            try {
+              // Tenta atualizar a sessão
+              const { error: refreshError } = await supabase.auth.refreshSession();
+              if (!refreshError) {
+                toast({
+                  title: "Sessão renovada",
+                  description: "Sua sessão foi renovada. Tente novamente.",
+                });
+                return;
+              }
+            } catch (e) {
+              await supabase.auth.signOut();
+              window.location.href = '/auth';
+            }
+          }
+          
           console.error("Erro ao atualizar serviço:", error);
           throw error;
         }
@@ -230,7 +298,7 @@ const ServicoFormDialog = ({
 
       } else {
         // Criar novo serviço
-        console.log("Criando novo serviço para veterinário:", veterinarioId);
+        console.log("Criando novo serviço para veterinário:", finalVeterinarioId);
         const { data, error } = await supabase
           .from('servicos')
           .insert({
@@ -238,12 +306,31 @@ const ServicoFormDialog = ({
             descricao: descricao || null,
             preco: precoNumerico,
             duracao_minutos: duracaoNumerica,
-            veterinario_id: veterinarioId
+            veterinario_id: finalVeterinarioId
           })
           .select('id')
           .single();
 
         if (error) {
+          // Verificar se é erro de autenticação
+          if (error.message?.includes('JWT') || error.message?.includes('token') || error.message?.includes('auth')) {
+            setAuthError('Sua sessão expirou. Por favor, faça login novamente.');
+            try {
+              // Tenta atualizar a sessão
+              const { error: refreshError } = await supabase.auth.refreshSession();
+              if (!refreshError) {
+                toast({
+                  title: "Sessão renovada",
+                  description: "Sua sessão foi renovada. Tente novamente.",
+                });
+                return;
+              }
+            } catch (e) {
+              await supabase.auth.signOut();
+              window.location.href = '/auth';
+            }
+          }
+          
           console.error("Erro na inserção do serviço:", error);
           throw error;
         }
@@ -316,6 +403,7 @@ const ServicoFormDialog = ({
   };
 
   const isLoading = isLoadingVeterinario || isLoadingProcedimentos;
+  const isFormValid = nome.trim() && preco && !isNaN(parseFloat(preco)) && parseFloat(preco) > 0 && selectedProcedimentos.length > 0;
 
   return (
     <Sheet open={isOpen} onOpenChange={() => onClose()}>
@@ -328,6 +416,13 @@ const ServicoFormDialog = ({
               : 'Preencha as informações para cadastrar um novo serviço.'}
           </SheetDescription>
         </SheetHeader>
+
+        {authError && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md">
+            <p className="font-medium">{authError}</p>
+            <p className="text-sm mt-1">Clique em Cancelar e faça login novamente.</p>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
@@ -465,7 +560,7 @@ const ServicoFormDialog = ({
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={isSubmitting || isLoading || !veterinarioId}
+            disabled={isSubmitting || isLoading || !isFormValid || !veterinarioId}
             className="bg-[#DD6B20] hover:bg-[#DD6B20]/90"
           >
             {isSubmitting ? (

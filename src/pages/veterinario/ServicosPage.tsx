@@ -45,25 +45,54 @@ const ServicosPage = () => {
   });
   
   // Buscar dados do veterinário pelo user_id
-  const { data: veterinario } = useQuery({
+  const { data: veterinario, isLoading: isLoadingVeterinario, error: veterinarioError } = useQuery({
     queryKey: ['veterinario-info'],
     queryFn: async () => {
       if (!user?.id) throw new Error('Usuário não autenticado');
       
-      console.log('Buscando dados do veterinário para user_id:', user.id);
-      const { data, error } = await supabase
-        .from('veterinarios')
-        .select('id, nome_completo')
-        .eq('user_id', user.id)
-        .single();
+      try {
+        console.log('Buscando dados do veterinário para user_id:', user.id);
+        const { data, error } = await supabase
+          .from('veterinarios')
+          .select('id, nome_completo')
+          .eq('user_id', user.id)
+          .single();
 
-      if (error) {
-        console.error('Erro ao buscar dados do veterinário:', error);
+        if (error) {
+          console.error('Erro ao buscar dados do veterinário:', error);
+          
+          // Verificar se é erro de autenticação
+          if (error.message?.includes('JWT') || error.message?.includes('token')) {
+            console.error("Erro de autenticação detectado. Tentando renovar sessão...");
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+              console.error("Falha ao renovar sessão:", refreshError);
+              await supabase.auth.signOut();
+              window.location.href = '/auth';
+              throw new Error("Sessão expirada. Redirecionando para login.");
+            } else {
+              console.log("Sessão renovada com sucesso. Retentando busca...");
+              // Executar a consulta novamente após renovação bem-sucedida
+              const { data: newData, error: newError } = await supabase
+                .from('veterinarios')
+                .select('id, nome_completo')
+                .eq('user_id', user.id)
+                .single();
+              
+              if (newError) throw newError;
+              return newData;
+            }
+          } else {
+            throw error;
+          }
+        }
+        
+        console.log('Dados do veterinário encontrados:', data);
+        return data;
+      } catch (error: any) {
+        console.error('Erro completo ao buscar dados do veterinário:', error);
         throw error;
       }
-      
-      console.log('Dados do veterinário encontrados:', data);
-      return data;
     },
     enabled: !!user?.id,
     meta: {
@@ -79,7 +108,7 @@ const ServicosPage = () => {
   });
   
   // Buscar serviços do veterinário
-  const { data: servicos, isLoading, error } = useQuery({
+  const { data: servicos, isLoading: isLoadingServicos, error: servicosError } = useQuery({
     queryKey: ['servicos-veterinario', veterinario?.id],
     queryFn: async () => {
       if (!veterinario?.id) {
@@ -87,26 +116,60 @@ const ServicosPage = () => {
         return [];
       }
       
-      console.log('Buscando serviços para veterinário ID:', veterinario.id);
-      
-      const { data, error } = await supabase
-        .from('servicos')
-        .select(`
-          *,
-          procedimentos_servicos (
-            procedimento:procedimentos (*)
-          )
-        `)
-        .eq('veterinario_id', veterinario.id)
-        .order('nome');
+      try {
+        console.log('Buscando serviços para veterinário ID:', veterinario.id);
+        
+        const { data, error } = await supabase
+          .from('servicos')
+          .select(`
+            *,
+            procedimentos_servicos (
+              procedimento:procedimentos (*)
+            )
+          `)
+          .eq('veterinario_id', veterinario.id)
+          .order('nome');
 
-      if (error) {
-        console.error('Erro ao buscar serviços:', error);
+        if (error) {
+          console.error('Erro ao buscar serviços:', error);
+          
+          // Verificar se é erro de autenticação
+          if (error.message?.includes('JWT') || error.message?.includes('token')) {
+            console.error("Erro de autenticação detectado. Tentando renovar sessão...");
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+              console.error("Falha ao renovar sessão:", refreshError);
+              await supabase.auth.signOut();
+              window.location.href = '/auth';
+              throw new Error("Sessão expirada. Redirecionando para login.");
+            } else {
+              console.log("Sessão renovada com sucesso. Retentando busca...");
+              // Executar a consulta novamente após renovação bem-sucedida
+              const { data: newData, error: newError } = await supabase
+                .from('servicos')
+                .select(`
+                  *,
+                  procedimentos_servicos (
+                    procedimento:procedimentos (*)
+                  )
+                `)
+                .eq('veterinario_id', veterinario.id)
+                .order('nome');
+              
+              if (newError) throw newError;
+              return newData || [];
+            }
+          } else {
+            throw error;
+          }
+        }
+        
+        console.log('Serviços encontrados:', data?.length || 0);
+        return data || [];
+      } catch (error: any) {
+        console.error('Erro completo ao buscar serviços:', error);
         throw error;
       }
-      
-      console.log('Serviços encontrados:', data?.length || 0);
-      return data || [];
     },
     enabled: !!veterinario?.id,
     meta: {
@@ -123,10 +186,13 @@ const ServicosPage = () => {
 
   // Loga erros para debug
   useEffect(() => {
-    if (error) {
-      console.error('Erro ao carregar serviços:', error);
+    if (veterinarioError || servicosError) {
+      console.error('Erros ao carregar dados:', {
+        veterinarioError,
+        servicosError
+      });
     }
-  }, [error]);
+  }, [veterinarioError, servicosError]);
 
   const handleEditServico = (servico: any) => {
     setServicoToEdit(servico);
@@ -160,11 +226,37 @@ const ServicosPage = () => {
         queryClient.invalidateQueries({ queryKey: ['servicos-veterinario'] });
 
       } catch (error: any) {
-        toast({
-          title: "Erro ao excluir serviço",
-          description: error.message || "Não foi possível excluir o serviço.",
-          variant: "destructive"
-        });
+        // Verificar se é erro de autenticação
+        if (error.message?.includes('JWT') || error.message?.includes('token')) {
+          toast({
+            title: "Sessão expirada",
+            description: "Sua sessão expirou. Você será redirecionado para o login.",
+            variant: "destructive"
+          });
+          
+          try {
+            // Tenta atualizar a sessão
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+              await supabase.auth.signOut();
+              window.location.href = '/auth';
+            } else {
+              toast({
+                title: "Sessão renovada",
+                description: "Por favor, tente novamente.",
+              });
+            }
+          } catch (e) {
+            await supabase.auth.signOut();
+            window.location.href = '/auth';
+          }
+        } else {
+          toast({
+            title: "Erro ao excluir serviço",
+            description: error.message || "Não foi possível excluir o serviço.",
+            variant: "destructive"
+          });
+        }
       }
     }
   };
@@ -188,8 +280,31 @@ const ServicosPage = () => {
     );
   };
 
+  // Verifica se existe uma sessão válida
+  const checkSession = async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) {
+      console.error("Erro ao verificar sessão:", error);
+      toast({
+        title: "Sessão não encontrada",
+        description: "Redirecionando para a página de login...",
+        variant: "destructive"
+      });
+      
+      await supabase.auth.signOut();
+      window.location.href = '/auth';
+      return false;
+    }
+    return true;
+  };
+
+  // Verificar sessão ao montar o componente
+  useEffect(() => {
+    checkSession();
+  }, []);
+
   // Se não houver dados do veterinário ainda, mostrar carregando
-  if (!veterinario && !error) {
+  if (!veterinario && !veterinarioError) {
     return (
       <div className="container py-8">
         <h1 className="text-2xl font-bold mb-6">Meus Serviços</h1>
@@ -200,6 +315,8 @@ const ServicosPage = () => {
       </div>
     );
   }
+
+  const isLoading = isLoadingVeterinario || isLoadingServicos;
 
   return (
     <div className="container py-8">
@@ -228,7 +345,7 @@ const ServicosPage = () => {
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-[#DD6B20]" />
         </div>
-      ) : error ? (
+      ) : servicosError ? (
         <div className="text-center py-10 text-gray-500">
           <p className="mb-4 text-red-500 font-medium">Não foi possível carregar os serviços</p>
           <Button 

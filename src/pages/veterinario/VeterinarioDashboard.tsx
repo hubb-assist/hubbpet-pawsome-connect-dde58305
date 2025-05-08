@@ -21,6 +21,7 @@ const VeterinarioDashboard: React.FC = () => {
   
   const fetchVeterinarioProfile = async () => {
     try {
+      console.log("Buscando perfil de veterinário para user_id:", user?.id);
       const { data, error } = await supabase
         .from('veterinarios')
         .select('*')
@@ -29,6 +30,29 @@ const VeterinarioDashboard: React.FC = () => {
         
       if (error && error.code !== 'PGRST116') {
         console.error('Erro ao buscar perfil:', error);
+        
+        // Verificar se é erro de autenticação
+        if (error.message?.includes('JWT') || error.message?.includes('token')) {
+          console.log("Tentando renovar sessão...");
+          try {
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (!refreshError) {
+              // Tentar novamente após renovação
+              const { data: newData } = await supabase
+                .from('veterinarios')
+                .select('*')
+                .eq('user_id', user?.id)
+                .single();
+                
+              setPerfil(newData);
+              return;
+            }
+          } catch (e) {
+            console.error("Erro ao renovar sessão:", e);
+          }
+        }
+      } else {
+        console.log("Perfil de veterinário encontrado:", data ? "Sim" : "Não");
       }
       
       setPerfil(data);
