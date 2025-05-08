@@ -15,7 +15,7 @@ type Agendamento = {
   id: string;
   created_at: string;
   data_hora: string;
-  status: "pendente" | "confirmado" | "realizado" | "cancelado";
+  status: string;
   servico: {
     nome: string;
     duracao_minutos: number;
@@ -41,41 +41,39 @@ const AgendamentoVeterinarioPage = () => {
   const realTimeSubscription = useRef<any>(null);
   
   useEffect(() => {
-    if (user) {
-      carregarAgendamentos();
-      
-      // Configurando a assinatura em tempo real
-      const channel = supabase
-        .channel('agendamentos-changes')
-        .on('postgres_changes', 
-          { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'agendamentos',
-            filter: `veterinario_id=eq.${user?.id}`
-          }, 
-          (payload) => {
-            console.log('Novo agendamento recebido:', payload);
-            if (enableSound) {
-              playNotificationSound();
-              toast("Novo agendamento recebido!", {
-                description: "Um paciente acabou de agendar uma consulta com você."
-              });
-            }
-            carregarAgendamentos();
+    carregarAgendamentos();
+    
+    // Configurando a assinatura em tempo real
+    const channel = supabase
+      .channel('agendamentos-changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'agendamentos',
+          filter: `veterinario_id=eq.${user?.id}`
+        }, 
+        (payload) => {
+          console.log('Novo agendamento recebido:', payload);
+          if (enableSound) {
+            playNotificationSound();
+            toast("Novo agendamento recebido!", {
+              description: "Um paciente acabou de agendar uma consulta com você."
+            });
           }
-        )
-        .subscribe();
-        
-      realTimeSubscription.current = channel;
-      
-      // Limpeza ao desmontar
-      return () => {
-        if (realTimeSubscription.current) {
-          supabase.removeChannel(realTimeSubscription.current);
+          carregarAgendamentos();
         }
-      };
-    }
+      )
+      .subscribe();
+      
+    realTimeSubscription.current = channel;
+    
+    // Limpeza ao desmontar
+    return () => {
+      if (realTimeSubscription.current) {
+        supabase.removeChannel(realTimeSubscription.current);
+      }
+    };
   }, [user, enableSound]);
 
   const carregarAgendamentos = async () => {
@@ -130,7 +128,7 @@ const AgendamentoVeterinarioPage = () => {
     }
   };
 
-  const atualizarStatusAgendamento = async (id: string, novoStatus: "pendente" | "confirmado" | "realizado" | "cancelado") => {
+  const atualizarStatusAgendamento = async (id: string, novoStatus: string) => {
     try {
       const { error } = await supabase
         .from('agendamentos')
@@ -161,7 +159,6 @@ const AgendamentoVeterinarioPage = () => {
       case 'cancelado':
         return 'bg-red-100 text-red-800';
       case 'concluido':
-      case 'realizado':
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';

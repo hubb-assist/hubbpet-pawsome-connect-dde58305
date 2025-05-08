@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -609,8 +610,6 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
         onConfirm={() => form.handleSubmit(onSubmit)()}
         title="Confirmar Agendamento"
         description={`Você está prestes a agendar um horário com ${veterinarioNome} para o serviço de ${servicoNome}. Deseja confirmar?`}
-        confirmText="Sim, agendar"
-        cancelText="Cancelar"
       />
     </>
   );
