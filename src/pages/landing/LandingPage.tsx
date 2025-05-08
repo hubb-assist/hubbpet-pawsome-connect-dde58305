@@ -23,7 +23,7 @@ const LandingPage = () => {
                   </Button>
                 </Link>
                 <Link to="/auth">
-                  <Button size="lg" variant="outline" className="border-white hover:text-hubbpet-primary font-['Poppins'] uppercase bg-[#dd6b20] text-base text-white">
+                  <Button size="lg" variant="outline" className="border-white hover:text-hubbpet-primary font-['Poppins'] uppercase bg-[#dd6b20] text-sm font-medium text-white">
                     É um veterinário? Cadastre-se
                   </Button>
                 </Link>
