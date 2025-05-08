@@ -50,15 +50,45 @@ const ServicoFormDialog = ({
   const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Controle do formulário - validação
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  // Verificar a validade do formulário sempre que os campos relevantes mudarem
+  useEffect(() => {
+    const formValido = 
+      nome.trim().length > 0 && 
+      !isNaN(parseFloat(preco)) && 
+      parseFloat(preco) > 0 && 
+      selectedProcedimentos.length > 0;
+    
+    setIsFormValid(formValido);
+    
+    // Log para debug
+    console.log("Estado do formulário:", {
+      nome: nome.trim().length > 0,
+      preco: !isNaN(parseFloat(preco)) && parseFloat(preco) > 0,
+      procedimentos: selectedProcedimentos.length > 0,
+      formValido,
+      veterinarioId
+    });
+    
+  }, [nome, preco, selectedProcedimentos, veterinarioId]);
+
   // Buscar o ID do registro do veterinário baseado no ID do usuário autenticado
   // apenas se não recebermos o veterinarioId como prop
   const { data: veterinario, isLoading: isLoadingVeterinario } = useQuery({
-    queryKey: ['veterinario-perfil', propVeterinarioId],
+    queryKey: ['veterinario-perfil', propVeterinarioId, servicoToEdit?.veterinario_id],
     queryFn: async () => {
       // Se já temos o ID do veterinário como prop, não precisamos buscar
       if (propVeterinarioId) {
         console.log("Usando veterinarioId da prop:", propVeterinarioId);
         return { id: propVeterinarioId };
+      }
+      
+      // Se estamos no modo de edição e o serviço já tem o ID do veterinário
+      if (servicoToEdit?.veterinario_id) {
+        console.log("Usando veterinarioId do serviço em edição:", servicoToEdit.veterinario_id);
+        return { id: servicoToEdit.veterinario_id };
       }
       
       try {
@@ -114,7 +144,7 @@ const ServicoFormDialog = ({
         throw error;
       }
     },
-    enabled: !propVeterinarioId,
+    enabled: !propVeterinarioId && !servicoToEdit?.veterinario_id,
     meta: {
       onSuccess: (data) => {
         console.log("ID do veterinário obtido com sucesso:", data.id);
@@ -176,6 +206,12 @@ const ServicoFormDialog = ({
         ?.map((ps: any) => ps.procedimento.id) || [];
       
       setSelectedProcedimentos(procedimentosIds);
+      
+      // Se estamos no modo de edição, definimos o ID do veterinário
+      if (servicoToEdit.veterinario_id) {
+        setVeterinarioId(servicoToEdit.veterinario_id);
+        console.log("ID do veterinário definido através do serviço:", servicoToEdit.veterinario_id);
+      }
     }
   }, [servicoToEdit]);
 
@@ -221,7 +257,7 @@ const ServicoFormDialog = ({
     }
 
     // Verificar se temos o ID do veterinário
-    const finalVeterinarioId = veterinarioId || propVeterinarioId;
+    const finalVeterinarioId = veterinarioId || propVeterinarioId || (servicoToEdit ? servicoToEdit.veterinario_id : null);
     
     if (!finalVeterinarioId) {
       toast({
@@ -239,7 +275,7 @@ const ServicoFormDialog = ({
       const precoNumerico = parseFloat(preco);
       const duracaoNumerica = parseInt(duracaoMinutos);
       
-      console.log("ID do veterinário para inserção de serviço:", finalVeterinarioId);
+      console.log("ID do veterinário para inserção/atualização de serviço:", finalVeterinarioId);
       
       let servicoId;
 
@@ -403,7 +439,9 @@ const ServicoFormDialog = ({
   };
 
   const isLoading = isLoadingVeterinario || isLoadingProcedimentos;
-  const isFormValid = nome.trim() && preco && !isNaN(parseFloat(preco)) && parseFloat(preco) > 0 && selectedProcedimentos.length > 0;
+  
+  // Determinar se estamos no modo edição
+  const isEditing = !!servicoToEdit;
 
   return (
     <Sheet open={isOpen} onOpenChange={() => onClose()}>
@@ -560,7 +598,7 @@ const ServicoFormDialog = ({
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={isSubmitting || isLoading || !isFormValid || !veterinarioId}
+            disabled={isSubmitting || isLoading || !isFormValid}
             className="bg-[#DD6B20] hover:bg-[#DD6B20]/90"
           >
             {isSubmitting ? (
@@ -568,7 +606,7 @@ const ServicoFormDialog = ({
             ) : (
               <Check className="mr-2 h-4 w-4" />
             )}
-            {servicoToEdit ? 'Atualizar Serviço' : 'Cadastrar Serviço'}
+            {isEditing ? 'Atualizar Serviço' : 'Cadastrar Serviço'}
           </Button>
         </SheetFooter>
       </SheetContent>
