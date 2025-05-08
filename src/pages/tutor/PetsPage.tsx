@@ -17,6 +17,15 @@ import { Pet, PetSexo } from '@/domain/models/User';
 import PetFormDialog from '@/components/tutor/PetFormDialog';
 import DeleteConfirmationDialog from '@/components/tutor/DeleteConfirmationDialog';
 
+// Mapeamento de códigos para valores legíveis
+const petTypeMapping: Record<string, string> = {
+  "Cachorro": "dog",
+  "Gato": "cat",
+  "Pássaro": "bird",
+  "Réptil": "reptile",
+  "Outro": "other"
+};
+
 const PetsPage = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -52,18 +61,23 @@ const PetsPage = () => {
       console.log("Pets recebidos:", data);
       
       // Converter os dados recebidos do Supabase para o formato esperado por Pet
-      const formattedPets: Pet[] = data?.map(pet => ({
-        id: pet.id,
-        name: pet.nome,
-        type: pet.especie as 'dog' | 'cat' | 'bird' | 'reptile' | 'other',
-        breed: pet.raca || '',
-        birthdate: pet.data_nascimento ? new Date(pet.data_nascimento) : undefined,
-        sexo: pet.sexo as PetSexo | undefined,
-        peso: pet.peso ? Number(pet.peso) : undefined,
-        tutorId: pet.tutor_id,
-        createdAt: new Date(pet.created_at),
-        updatedAt: new Date(pet.updated_at)
-      })) || [];
+      const formattedPets: Pet[] = data?.map(pet => {
+        // Identificar o tipo do pet com base no mapeamento inverso
+        const petType = petTypeMapping[pet.especie] || "other";
+        
+        return {
+          id: pet.id,
+          name: pet.nome,
+          type: petType as 'dog' | 'cat' | 'bird' | 'reptile' | 'other',
+          breed: pet.raca || '',
+          birthdate: pet.data_nascimento ? new Date(pet.data_nascimento) : undefined,
+          sexo: pet.sexo as PetSexo | undefined,
+          peso: pet.peso ? Number(pet.peso) : undefined,
+          tutorId: pet.tutor_id,
+          createdAt: new Date(pet.created_at),
+          updatedAt: new Date(pet.updated_at)
+        };
+      }) || [];
       
       setPets(formattedPets);
     } catch (error: any) {

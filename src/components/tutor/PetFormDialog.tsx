@@ -54,6 +54,15 @@ const petSchema = z.object({
 
 type PetFormValues = z.infer<typeof petSchema>;
 
+// Mapeamento de códigos para valores legíveis
+const petTypeMapping = {
+  dog: "Cachorro",
+  cat: "Gato",
+  bird: "Pássaro",
+  reptile: "Réptil",
+  other: "Outro"
+};
+
 const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -110,7 +119,7 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
     try {
       const petData = {
         nome: data.name,
-        especie: data.type,
+        especie: petTypeMapping[data.type as keyof typeof petTypeMapping], // Enviar o nome legível para o banco
         raca: data.breed || null,
         data_nascimento: data.birthdate ? data.birthdate : null,
         sexo: data.sexo || null,
