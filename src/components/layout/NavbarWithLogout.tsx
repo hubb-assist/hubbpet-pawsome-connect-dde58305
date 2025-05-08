@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface NavbarProps {
-  // Se no futuro precisar passar toggleSidebar novamente, adicionar aqui
+  toggleSidebar?: () => void;
 }
 
-const NavbarWithLogout: React.FC<NavbarProps> = () => {
+const NavbarWithLogout: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const { user, signOut, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();

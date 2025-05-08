@@ -4,7 +4,6 @@ import TutorSidebar from './TutorSidebar';
 import VeterinarySidebar from './VeterinarySidebar';
 import AdminSidebar from './AdminSidebar';
 import NavbarWithLogout from './NavbarWithLogout';
-import SidebarWrapper from './SidebarWrapper';
 
 interface AppLayoutProps {
   userRole: 'tutor' | 'veterinario' | 'admin';
@@ -21,26 +20,24 @@ const AppLayout = ({ userRole, children }: AppLayoutProps) => {
   const renderSidebar = () => {
     switch (userRole) {
       case 'tutor':
-        return <TutorSidebar isExpanded={sidebarOpen} toggleSidebar={toggleSidebar} />;
+        return <TutorSidebar />;
       case 'veterinario':
-        return <VeterinarySidebar isExpanded={sidebarOpen} toggleSidebar={toggleSidebar} />;
+        return <VeterinarySidebar closeSidebar={() => setSidebarOpen(false)} />;
       case 'admin':
-        return <AdminSidebar isExpanded={sidebarOpen} toggleSidebar={toggleSidebar} />;
+        return <AdminSidebar />;
       default:
-        return <TutorSidebar isExpanded={sidebarOpen} toggleSidebar={toggleSidebar} />;
+        return <TutorSidebar />;
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1">
-        <div className={`${sidebarOpen ? 'block' : 'hidden md:block'}`}>
-          <SidebarWrapper isExpanded={sidebarOpen} toggleSidebar={toggleSidebar}>
-            {renderSidebar()}
-          </SidebarWrapper>
+        <div className={`min-h-screen ${sidebarOpen ? 'block' : 'hidden md:block'}`}>
+          {renderSidebar()}
         </div>
         <div className="flex-1 flex flex-col">
-          <NavbarWithLogout />
+          <NavbarWithLogout toggleSidebar={toggleSidebar} />
           <div className="flex-1 p-6 bg-gray-50">
             {children}
           </div>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,9 +9,6 @@ import {
   ClipboardList
 } from 'lucide-react';
 
-import SidebarWrapper from './SidebarWrapper';
-import SidebarItem from './SidebarItem';
-
 type VeterinarySidebarProps = {
   closeSidebar?: () => void;
 }
@@ -19,11 +16,9 @@ type VeterinarySidebarProps = {
 const VeterinarySidebar = ({ closeSidebar = () => {} }: VeterinarySidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  const toggleSidebar = () => {
-    setIsExpanded(!isExpanded);
-  };
+  
+  // O sidebar tem fundo escuro, então usamos o logo branco (claro)
+  const logoUrl = "https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png";
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -63,21 +58,30 @@ const VeterinarySidebar = ({ closeSidebar = () => {} }: VeterinarySidebarProps) 
   };
 
   return (
-    <SidebarWrapper isExpanded={isExpanded} toggleSidebar={toggleSidebar}>
-      <div className="space-y-1">
+    <div className="min-h-screen bg-hubbpet-primary text-white w-64">
+      <div className="flex flex-col">
+        <div className="flex items-center justify-center p-4 border-b border-gray-800">
+          <img src={logoUrl} alt="HubbPet" className="max-h-10" />
+        </div>
+      </div>
+      <div className="mt-6 flex flex-col px-4 space-y-1">
         {navigationItems.map((item) => (
-          <SidebarItem
+          <div
             key={item.path}
-            icon={item.icon}
-            title={item.text}
-            href={item.path}
-            isActive={isActive(item.path)}
-            isExpanded={isExpanded}
+            className={`
+              flex items-center p-2 rounded-md cursor-pointer transition-colors
+              ${isActive(item.path) ? 'bg-[#2D113F] text-white' : 'text-white hover:bg-sidebar-accent'}
+            `}
             onClick={() => handleNavigate(item.path)}
-          />
+          >
+            <div className="mr-3">
+              <item.icon size={20} />
+            </div>
+            <span className="text-sm font-medium text-[15px]">{item.text}</span>
+          </div>
         ))}
       </div>
-    </SidebarWrapper>
+    </div>
   );
 };
 
