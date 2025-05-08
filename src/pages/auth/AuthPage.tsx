@@ -40,7 +40,7 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <div className="flex-1 flex items-center justify-center p-4">
-        <AuthForm />
+        <AuthForm mode="login" />
       </div>
       <div className="p-4 text-center text-sm text-gray-500">
         © 2025 HubbPet. Todos os direitos reservados.

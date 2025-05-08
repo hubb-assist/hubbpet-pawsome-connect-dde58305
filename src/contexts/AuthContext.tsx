@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +37,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Função para garantir que perfil de tutor exista
+  const ensureTutorProfile = async (userId: string, userEmail: string | undefined) => {
+    try {
+      if (!userId || role !== 'tutor') return;
+      
+      console.log("Verificando perfil de tutor para:", userId);
+      
+      // Verificar se já existe um perfil de tutor
+      const { data, error } = await supabase
+        .from('tutores')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+      
+      // Se não existir perfil e não for erro 406 (not found)
+      if (!data) {
+        console.log("Perfil de tutor não encontrado, criando novo perfil");
+        // Criar um nome a partir do email
+        const nome = userEmail ? userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1) : 'Novo Tutor';
+        
+        // Inserir novo perfil de tutor
+        const { error: insertError } = await supabase.from('tutores').insert({
+          user_id: userId,
+          email: userEmail || '',
+          nome: nome
+        });
+        
+        if (insertError) {
+          console.error("Erro ao criar perfil de tutor:", insertError);
+        } else {
+          console.log("Perfil de tutor criado com sucesso");
+        }
+      } else {
+        console.log("Perfil de tutor já existe:", data.id);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar/criar perfil de tutor:", error);
+    }
+  };
+
   useEffect(() => {
     console.log("AuthProvider inicializado");
     
@@ -50,36 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Evitar loop infinito ao chamar funções Supabase dentro do callback
           setTimeout(async () => {
             await fetchUserRole(currentSession.user.id);
-            
-            // Se for evento de login, verificar/criar o perfil de tutor se necessário
-            if (event === 'SIGNED_IN') {
-              const { data: userRole } = await supabase.rpc('get_user_role', { 
-                user_id: currentSession.user.id 
-              });
-              
-              // Se for um tutor, verifica se já tem perfil na tabela tutores
-              if (userRole === 'tutor') {
-                const { data: tutorProfile, error: tutorError } = await supabase
-                  .from('tutores')
-                  .select('*')
-                  .eq('user_id', currentSession.user.id)
-                  .maybeSingle();
-                
-                // Se não tiver perfil, cria um
-                if (!tutorProfile && !tutorError) {
-                  console.log("Criando perfil de tutor para usuário existente:", currentSession.user.id);
-                  
-                  const userData = currentSession.user.user_metadata;
-                  const userName = userData.name || userData.full_name || 'Usuário';
-                  
-                  await supabase.from('tutores').insert({
-                    user_id: currentSession.user.id,
-                    nome: userName,
-                    email: currentSession.user.email
-                  });
-                }
-              }
-            }
           }, 0);
         } else {
           setUserRole(null);
@@ -105,6 +116,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, []);
+
+  // Efeito para garantir criação do perfil de tutor quando o usuário e papel estiverem disponíveis
+  useEffect(() => {
+    if (user && role === 'tutor') {
+      ensureTutorProfile(user.id, user.email);
+    }
+  }, [user?.id, role]);
 
   // Recuperar o papel do usuário do Supabase
   const fetchUserRole = async (userId: string) => {
