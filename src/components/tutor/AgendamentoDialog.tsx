@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format, addDays, isBefore, isAfter, parse } from 'date-fns';
+import { format, addDays, isBefore, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -137,7 +137,10 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
   const buscarHorariosDisponiveis = async (data: Date) => {
     try {
       setIsLoading(true);
-      const diaSemana = data.getDay(); // 0 = domingo, 1 = segunda, ...
+      
+      // Obtém o dia da semana (0 = domingo, 1 = segunda, etc)
+      const diaSemana = data.getDay();
+      console.log('Dia da semana:', diaSemana, 'para data:', format(data, 'yyyy-MM-dd'));
 
       // Buscar disponibilidade do veterinário para este dia da semana
       const { data: disponibilidades, error } = await supabase
@@ -145,10 +148,13 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
         .select('*')
         .eq('veterinario_id', veterinarioId)
         .eq('dia_semana', diaSemana);
+      
+      console.log('Disponibilidades encontradas:', disponibilidades, 'Erro:', error);
 
       if (error) throw error;
 
       if (!disponibilidades || disponibilidades.length === 0) {
+        console.log('Nenhuma disponibilidade encontrada para este dia');
         setHorariosDisponiveis([]);
         return;
       }
@@ -161,7 +167,9 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
         .eq('veterinario_id', veterinarioId)
         .gte('data_hora', `${dataFormatada}T00:00:00`)
         .lte('data_hora', `${dataFormatada}T23:59:59`)
-        .neq('status', 'cancelado');
+        .in('status', ['pendente', 'confirmado']);
+      
+      console.log('Agendamentos existentes:', agendamentosExistentes);
 
       if (agendamentosError) throw agendamentosError;
 
@@ -172,6 +180,8 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
         const horaInicio = disp.hora_inicio.slice(0, 5);
         const horaFim = disp.hora_fim.slice(0, 5);
         const intervaloMinutos = disp.intervalo_minutos;
+        
+        console.log(`Gerando horários de ${horaInicio} até ${horaFim} com intervalos de ${intervaloMinutos}min`);
         
         // Converter para minutos para facilitar os cálculos
         const [inicioHoras, inicioMinutos] = horaInicio.split(':').map(Number);
@@ -192,6 +202,8 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
           });
         }
       });
+      
+      console.log('Horários gerados:', todosHorarios);
 
       // Marcar horários já agendados como indisponíveis
       if (agendamentosExistentes && agendamentosExistentes.length > 0) {
@@ -208,6 +220,7 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
       // Ordenar os horários
       todosHorarios.sort((a, b) => a.hora.localeCompare(b.hora));
       
+      console.log('Horários disponíveis após processamento:', todosHorarios);
       setHorariosDisponiveis(todosHorarios);
     } catch (error: any) {
       console.error('Erro ao buscar horários disponíveis:', error);

@@ -31,6 +31,7 @@ const DisponibilidadeList: React.FC<DisponibilidadeListProps> = ({ veterinarioId
 
   useEffect(() => {
     if (veterinarioId) {
+      console.log('Carregando disponibilidades para veterinário ID:', veterinarioId);
       carregarDisponibilidades();
     }
   }, [veterinarioId]);
@@ -38,6 +39,8 @@ const DisponibilidadeList: React.FC<DisponibilidadeListProps> = ({ veterinarioId
   const carregarDisponibilidades = async () => {
     try {
       setIsLoading(true);
+      console.log('Iniciando busca de disponibilidades...');
+      
       const { data, error } = await supabase
         .from('disponibilidade_veterinario')
         .select('*')
@@ -45,8 +48,12 @@ const DisponibilidadeList: React.FC<DisponibilidadeListProps> = ({ veterinarioId
         .order('dia_semana', { ascending: true })
         .order('hora_inicio', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro na consulta:", error);
+        throw error;
+      }
 
+      console.log('Disponibilidades carregadas:', data);
       setDisponibilidades(data || []);
     } catch (error) {
       console.error("Erro ao carregar disponibilidades:", error);
