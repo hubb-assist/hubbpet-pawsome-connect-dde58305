@@ -10,7 +10,7 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Pet } from '@/domain/models/User';
@@ -55,7 +55,7 @@ const PetsPage = () => {
       const formattedPets: Pet[] = data?.map(pet => ({
         id: pet.id,
         name: pet.nome,
-        type: pet.especie,
+        type: pet.especie as 'dog' | 'cat' | 'bird' | 'reptile' | 'other',
         breed: pet.raca || '',
         birthdate: pet.data_nascimento ? new Date(pet.data_nascimento) : undefined,
         tutorId: pet.tutor_id,
@@ -159,7 +159,7 @@ const PetsPage = () => {
               </CardContent>
               <CardFooter className="flex justify-end space-x-2">
                 <Button variant="outline" size="sm" onClick={() => handleEditPet(pet)}>
-                  <pencil className="h-4 w-4 mr-1" /> Editar
+                  <Pencil className="h-4 w-4 mr-1" /> Editar
                 </Button>
                 <Button variant="destructive" size="sm" onClick={() => handleDeletePet(pet)}>
                   <Trash2 className="h-4 w-4 mr-1" /> Remover

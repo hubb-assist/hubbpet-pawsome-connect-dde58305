@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { 
   Form,
   FormControl,
@@ -191,6 +190,7 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
                   <Select 
                     onValueChange={field.onChange}
                     defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -220,6 +220,7 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
                     <Input 
                       placeholder="Raça do pet" 
                       {...field} 
+                      value={field.value || ''}
                     />
                   </FormControl>
                   <FormMessage />
@@ -237,6 +238,7 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
                     <Input 
                       type="date" 
                       {...field} 
+                      value={field.value || ''}
                     />
                   </FormControl>
                   <FormMessage />
