@@ -132,6 +132,13 @@ const ServicoFormDialog = ({
       const precoNumerico = parseFloat(preco);
       const duracaoNumerica = parseInt(duracaoMinutos);
 
+      // Obter o ID do veterinário atual (usuário autenticado)
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+
       let servicoId;
 
       if (servicoToEdit) {
@@ -168,7 +175,8 @@ const ServicoFormDialog = ({
             nome,
             descricao: descricao || null,
             preco: precoNumerico,
-            duracao_minutos: duracaoNumerica
+            duracao_minutos: duracaoNumerica,
+            veterinario_id: user.id  // Adicionando o ID do veterinário atual
           })
           .select('id')
           .single();
