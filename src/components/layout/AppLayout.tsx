@@ -13,6 +13,10 @@ interface AppLayoutProps {
 const AppLayout = ({ userRole, children }: AppLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
@@ -33,11 +37,11 @@ const AppLayout = ({ userRole, children }: AppLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex flex-1">
-        <div className="min-h-screen">
+        <div className={`min-h-screen ${sidebarOpen ? 'block' : 'hidden md:block'}`}>
           {renderSidebar()}
         </div>
         <div className="flex-1 flex flex-col">
-          <NavbarWithLogout />
+          <NavbarWithLogout toggleSidebar={toggleSidebar} />
           <div className="flex-1 p-6 bg-gray-50">
             {children}
           </div>
