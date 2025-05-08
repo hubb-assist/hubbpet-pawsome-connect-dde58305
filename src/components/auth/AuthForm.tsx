@@ -21,19 +21,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UserRole } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "E-mail inválido" }),
@@ -45,7 +38,6 @@ const registerSchema = z.object({
   email: z.string().email({ message: "E-mail inválido" }),
   password: z.string().min(6, { message: "Senha deve ter pelo menos 6 caracteres" }),
   confirmPassword: z.string(),
-  role: z.enum(["tutor", "veterinario"]),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -79,7 +71,6 @@ export default function AuthForm() {
       email: "",
       password: "",
       confirmPassword: "",
-      role: "tutor",
     },
   });
 
@@ -117,7 +108,8 @@ export default function AuthForm() {
     
     try {
       console.log("Tentando registrar com:", data.email);
-      await signUp(data.email, data.password, data.name, data.role);
+      // Sempre registramos como "tutor" já que removemos a opção de seleção
+      await signUp(data.email, data.password, data.name, "tutor");
       setAuthMode("login");
       setNeedsEmailConfirmation(true);
       setEmailForResend(data.email);
@@ -176,7 +168,6 @@ export default function AuthForm() {
     
     try {
       console.log("Tentando fazer login com conta de demonstração");
-      // Corrigindo as credenciais da conta de demonstração para usar as que funcionam nos logs
       await signIn("luis@admin.hubbpet.com", "adminhubb2023");
       console.log("Login com conta de demonstração bem-sucedido");
     } catch (error: any) {
@@ -190,10 +181,16 @@ export default function AuthForm() {
   return (
     <Card className="w-full max-w-md mx-auto border-[#2D113F]/20">
       <CardHeader>
-        <div className="flex justify-center mb-6">
-          <div className="logo-container">
+        <div className="flex justify-between items-center mb-6">
+          <Link to="/">
+            <Button variant="ghost" size="icon" aria-label="Voltar para home">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div className="logo-container flex-grow text-center">
             <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo_ESCURO.png" alt="HubbPet" />
           </div>
+          <div className="w-9"></div> {/* Espaço para balancear o layout */}
         </div>
         <CardTitle className="text-2xl text-center text-[#2D113F]">
           {authMode === "login" ? "Login" : "Cadastro"}
@@ -201,7 +198,7 @@ export default function AuthForm() {
         <CardDescription className="text-center">
           {authMode === "login" 
             ? "Acesse sua conta no HubbPet" 
-            : "Crie sua conta e conecte-se ao melhor marketplace veterinário"}
+            : "Crie sua conta como tutor de pet"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -349,27 +346,6 @@ export default function AuthForm() {
                       <FormControl>
                         <Input type="password" placeholder="********" {...field} autoComplete="new-password" />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={registerForm.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sou um</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione seu perfil" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="tutor">Tutor de Pet</SelectItem>
-                          <SelectItem value="veterinario">Profissional Veterinário</SelectItem>
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
