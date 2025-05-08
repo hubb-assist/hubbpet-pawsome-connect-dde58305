@@ -6,7 +6,7 @@ import AdminSidebar from './AdminSidebar';
 import NavbarWithLogout from './NavbarWithLogout';
 
 interface AppLayoutProps {
-  userRole: 'tutor' | 'veterinario' | 'admin';
+  userRole: 'tutor' | 'veterinary' | 'admin';
   children: React.ReactNode;
 }
 
@@ -15,7 +15,7 @@ const AppLayout = ({ userRole, children }: AppLayoutProps) => {
     switch (userRole) {
       case 'tutor':
         return <TutorSidebar />;
-      case 'veterinario':
+      case 'veterinary':
         return <VeterinarySidebar />;
       case 'admin':
         return <AdminSidebar />;
