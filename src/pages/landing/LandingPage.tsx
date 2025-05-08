@@ -13,7 +13,7 @@ const LandingPage = () => {
               <div className="logo-container mb-6">
                 <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png" alt="HubbPet" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-6 font-['Poppins']">
+              <h1 className="text-4xl font-bold mb-6 font-['Poppins'] md:text-4xl my-[32px] py-[16px] px-[3px] mx-0">
                 CONECTANDO TUTORES E VETERINÁRIOS EM POUCOS CLIQUES
               </h1>
               <div className="flex flex-col sm:flex-row gap-4">
