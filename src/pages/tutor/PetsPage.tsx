@@ -58,6 +58,8 @@ const PetsPage = () => {
         type: pet.especie as 'dog' | 'cat' | 'bird' | 'reptile' | 'other',
         breed: pet.raca || '',
         birthdate: pet.data_nascimento ? new Date(pet.data_nascimento) : undefined,
+        sexo: pet.sexo as 'macho' | 'femea' | 'outro' | undefined,
+        peso: pet.peso ? Number(pet.peso) : undefined,
         tutorId: pet.tutor_id,
         createdAt: new Date(pet.created_at),
         updatedAt: new Date(pet.updated_at)
@@ -153,6 +155,16 @@ const PetsPage = () => {
                   {pet.birthdate && (
                     <p className="text-sm">
                       Data de Nascimento: {new Date(pet.birthdate).toLocaleDateString()}
+                    </p>
+                  )}
+                  {pet.sexo && (
+                    <p className="text-sm">
+                      Sexo: {pet.sexo.charAt(0).toUpperCase() + pet.sexo.slice(1)}
+                    </p>
+                  )}
+                  {pet.peso && (
+                    <p className="text-sm">
+                      Peso: {pet.peso} kg
                     </p>
                   )}
                 </div>

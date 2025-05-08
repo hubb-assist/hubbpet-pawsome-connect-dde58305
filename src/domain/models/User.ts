@@ -42,6 +42,8 @@ export interface Pet {
   type: 'dog' | 'cat' | 'bird' | 'reptile' | 'other';
   breed: string;
   birthdate?: Date;
+  sexo?: 'macho' | 'femea' | 'outro';
+  peso?: number;
   tutorId: string;
   createdAt: Date;
   updatedAt: Date;

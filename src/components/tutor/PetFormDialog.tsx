@@ -48,6 +48,8 @@ const petSchema = z.object({
   }),
   breed: z.string().optional(),
   birthdate: z.string().optional(),
+  sexo: z.enum(["macho", "femea", "outro"]).optional(),
+  peso: z.coerce.number().optional(),
 });
 
 type PetFormValues = z.infer<typeof petSchema>;
@@ -65,11 +67,15 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
       type: pet.type,
       breed: pet.breed || '',
       birthdate: pet.birthdate ? new Date(pet.birthdate).toISOString().split('T')[0] : undefined,
+      sexo: pet.sexo || undefined,
+      peso: pet.peso || undefined,
     } : {
       name: '',
       type: 'dog',
       breed: '',
       birthdate: undefined,
+      sexo: undefined,
+      peso: undefined,
     },
   });
   
@@ -81,6 +87,8 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
           type: pet.type,
           breed: pet.breed || '',
           birthdate: pet.birthdate ? new Date(pet.birthdate).toISOString().split('T')[0] : undefined,
+          sexo: pet.sexo || undefined,
+          peso: pet.peso || undefined,
         });
       } else {
         form.reset({
@@ -88,6 +96,8 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
           type: 'dog',
           breed: '',
           birthdate: undefined,
+          sexo: undefined,
+          peso: undefined,
         });
       }
     }
@@ -103,6 +113,8 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
         especie: data.type,
         raca: data.breed || null,
         data_nascimento: data.birthdate ? data.birthdate : null,
+        sexo: data.sexo || null,
+        peso: data.peso || null,
         tutor_id: user.id,
         updated_at: new Date().toISOString(),
       };
@@ -227,6 +239,56 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
                 </FormItem>
               )}
             />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="sexo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sexo</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value || ''}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o sexo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="macho">Macho</SelectItem>
+                        <SelectItem value="femea">Fêmea</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="peso"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Peso (kg)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number"
+                        step="0.01"
+                        placeholder="Peso do pet" 
+                        {...field}
+                        value={field.value || ''}
+                        onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <FormField
               control={form.control}
