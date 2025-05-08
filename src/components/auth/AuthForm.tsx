@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +23,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -166,16 +165,10 @@ export default function AuthForm() {
   return (
     <Card className="w-full max-w-md mx-auto border-[#2D113F]/20">
       <CardHeader>
-        <div className="flex justify-between items-center mb-6">
-          <Link to="/">
-            <Button variant="ghost" size="icon" aria-label="Voltar para home">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div className="logo-container flex-grow text-center">
+        <div className="flex justify-center items-center mb-6">
+          <div className="logo-container text-center">
             <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo_ESCURO.png" alt="HubbPet" />
           </div>
-          <div className="w-9"></div> {/* Espaço para balancear o layout */}
         </div>
         <CardTitle className="text-2xl text-center text-[#2D113F]">
           {authMode === "login" ? "Login" : "Cadastro"}
@@ -355,4 +348,3 @@ export default function AuthForm() {
     </Card>
   );
 }
-
