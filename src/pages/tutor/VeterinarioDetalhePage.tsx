@@ -41,6 +41,7 @@ import {
   Calendar 
 } from 'lucide-react';
 import { formatarHora, DIAS_SEMANA } from '@/types/agenda';
+import AgendamentoDialog from '@/components/tutor/AgendamentoDialog';
 
 // Tipos
 type Veterinario = {
@@ -77,6 +78,12 @@ type Disponibilidade = {
 const VeterinarioDetalhePage = () => {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("informacoes");
+  const [agendamentoDialogOpen, setAgendamentoDialogOpen] = useState(false);
+  const [servicoSelecionado, setServicoSelecionado] = useState<{
+    id: string;
+    nome: string;
+    duracao: number;
+  } | null>(null);
 
   // Busca os dados do veterinário
   const { data: veterinario, isLoading: isLoadingVet, error: errorVet } = useQuery({
@@ -126,10 +133,16 @@ const VeterinarioDetalhePage = () => {
   });
 
   // Iniciar processo de agendamento
-  const iniciarAgendamento = (servicoId: string) => {
+  const iniciarAgendamento = (servicoId: string, servicoNome: string, duracaoMinutos: number) => {
     if (!veterinario) return;
     
-    toast.info("Funcionalidade de agendamento será implementada em breve!");
+    setServicoSelecionado({
+      id: servicoId,
+      nome: servicoNome,
+      duracao: duracaoMinutos
+    });
+    setAgendamentoDialogOpen(true);
+    
     console.log(`Iniciando agendamento para serviço ${servicoId} com veterinário ${veterinario.nome_completo}`);
   };
 
@@ -346,7 +359,7 @@ const VeterinarioDetalhePage = () => {
                             </span>
                             <Button
                               className="bg-[#DD6B20] hover:bg-[#C05621]"
-                              onClick={() => iniciarAgendamento(servico.id)}
+                              onClick={() => iniciarAgendamento(servico.id, servico.nome, servico.duracao_minutos)}
                             >
                               Agendar
                             </Button>
@@ -448,6 +461,19 @@ const VeterinarioDetalhePage = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Dialog de agendamento */}
+      {servicoSelecionado && veterinario && (
+        <AgendamentoDialog 
+          isOpen={agendamentoDialogOpen}
+          onOpenChange={setAgendamentoDialogOpen}
+          servicoId={servicoSelecionado.id}
+          servicoNome={servicoSelecionado.nome}
+          veterinarioId={veterinario.id}
+          veterinarioNome={veterinario.nome_completo}
+          duracaoMinutos={servicoSelecionado.duracao}
+        />
+      )}
     </div>
   );
 };

@@ -1,38 +1,76 @@
 
-import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Home, Calendar, Settings, User, BookOpen } from "lucide-react";
+import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  User, 
+  Stethoscope, 
+  Calendar, 
+  ClipboardList
+} from 'lucide-react';
+
 import SidebarWrapper from './SidebarWrapper';
 import SidebarItem from './SidebarItem';
 
-const VeterinarySidebar = () => {
-  const location = useLocation();
-  const [isExpanded, setIsExpanded] = useState(false);
+type VeterinarySidebarProps = {
+  closeSidebar?: () => void;
+}
 
-  const toggleSidebar = () => {
-    setIsExpanded(!isExpanded);
+const VeterinarySidebar = ({ closeSidebar = () => {} }: VeterinarySidebarProps) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
   };
 
-  const menuItems = [
-    { icon: Home, title: 'Dashboard', href: '/vet' },
-    { icon: Calendar, title: 'Agenda', href: '/vet/agenda' },
-    { icon: BookOpen, title: 'Meus Serviços', href: '/vet/services' },
-    { icon: User, title: 'Meu Perfil', href: '/vet/perfil' },
-    { icon: Settings, title: 'Configurações', href: '/vet/settings' },
+  const navigationItems = [
+    { 
+      path: '/vet', 
+      icon: <LayoutDashboard className="h-5 w-5" />, 
+      text: 'Dashboard' 
+    },
+    { 
+      path: '/vet/perfil', 
+      icon: <User className="h-5 w-5" />, 
+      text: 'Meu Perfil' 
+    },
+    { 
+      path: '/vet/services', 
+      icon: <Stethoscope className="h-5 w-5" />, 
+      text: 'Serviços' 
+    },
+    { 
+      path: '/vet/agenda', 
+      icon: <Calendar className="h-5 w-5" />, 
+      text: 'Disponibilidade' 
+    },
+    { 
+      path: '/vet/agendamentos', 
+      icon: <ClipboardList className="h-5 w-5" />, 
+      text: 'Agendamentos' 
+    }
   ];
 
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    closeSidebar();
+  };
+
   return (
-    <SidebarWrapper isExpanded={isExpanded} toggleSidebar={toggleSidebar}>
-      {menuItems.map((item) => (
-        <SidebarItem
-          key={item.href}
-          icon={item.icon}
-          title={item.title}
-          href={item.href}
-          isActive={location.pathname === item.href}
-          isExpanded={isExpanded}
-        />
-      ))}
+    <SidebarWrapper>
+      <div className="space-y-1">
+        {navigationItems.map((item) => (
+          <SidebarItem
+            key={item.path}
+            icon={item.icon}
+            active={isActive(item.path)}
+            onClick={() => handleNavigate(item.path)}
+          >
+            {item.text}
+          </SidebarItem>
+        ))}
+      </div>
     </SidebarWrapper>
   );
 };

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import ServicosPage from '@/pages/veterinario/ServicosPage';
 import SearchVeterinarioPage from '@/pages/tutor/SearchVeterinarioPage';
 import VeterinarioDetalhePage from '@/pages/tutor/VeterinarioDetalhePage';
+import AgendamentoVeterinarioPage from '@/pages/veterinario/AgendamentoVeterinarioPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -101,6 +103,7 @@ const App = () => {
                   <Routes>
                     <Route path="/" element={<VeterinarioDashboard />} />
                     <Route path="/agenda" element={<AgendaPage />} />
+                    <Route path="/agendamentos" element={<AgendamentoVeterinarioPage />} />
                     <Route path="/perfil" element={<VeterinarioPerfilPage />} />
                     <Route path="/services" element={<ServicosPage />} />
                   </Routes>
