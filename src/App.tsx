@@ -18,6 +18,7 @@ import VeterinarioPerfilPage from '@/pages/veterinario/VeterinarioProfilePage';
 import AgendaPage from '@/pages/veterinario/AgendaPage';
 import AguardandoAprovacaoPage from '@/pages/auth/AguardandoAprovacaoPage';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import ServicosPage from '@/pages/veterinario/ServicosPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -100,6 +101,7 @@ const App = () => {
                     <Route path="/" element={<VeterinarioDashboard />} />
                     <Route path="/agenda" element={<AgendaPage />} />
                     <Route path="/perfil" element={<VeterinarioPerfilPage />} />
+                    <Route path="/services" element={<ServicosPage />} />
                   </Routes>
                 </AppLayout>
               </ProtectedRoute>

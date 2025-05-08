@@ -359,6 +359,42 @@ export type Database = {
         }
         Relationships: []
       }
+      procedimentos_servicos: {
+        Row: {
+          created_at: string
+          id: string
+          procedimento_id: string
+          servico_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          procedimento_id: string
+          servico_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          procedimento_id?: string
+          servico_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procedimentos_servicos_procedimento_id_fkey"
+            columns: ["procedimento_id"]
+            isOneToOne: false
+            referencedRelation: "procedimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procedimentos_servicos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       servicos: {
         Row: {
           created_at: string | null
