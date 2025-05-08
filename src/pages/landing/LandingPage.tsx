@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ const LandingPage = () => {
                     Encontre um veterinário
                   </Button>
                 </Link>
-                <Link to="/auth">
+                <Link to="/veterinario/registro">
                   <Button size="lg" variant="outline" className="border-white hover:text-hubbpet-primary font-['Poppins'] uppercase bg-[#dd6b20] text-sm font-medium text-white">
                     É um veterinário? Cadastre-se
                   </Button>
