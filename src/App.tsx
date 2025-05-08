@@ -18,6 +18,7 @@ import AgendaPage from '@/pages/veterinario/AgendaPage';
 import AguardandoAprovacaoPage from '@/pages/auth/AguardandoAprovacaoPage';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import ServicosPage from '@/pages/veterinario/ServicosPage';
+import SearchVeterinarioPage from '@/pages/tutor/SearchVeterinarioPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -116,6 +117,7 @@ const App = () => {
                     <Route path="/" element={<TutorDashboard />} />
                     <Route path="/perfil" element={<TutorProfilePage />} />
                     <Route path="/pets" element={<PetsPage />} />
+                    <Route path="/search" element={<SearchVeterinarioPage />} />
                   </Routes>
                 </AppLayout>
               </ProtectedRoute>
