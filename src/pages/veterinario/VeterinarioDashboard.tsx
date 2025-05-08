@@ -114,9 +114,11 @@ const VeterinarioDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p>Você ainda não cadastrou nenhum serviço.</p>
-            <Button className="mt-4 bg-[#DD6B20] text-white hover:bg-[#DD6B20]/80">
-              Adicionar Serviço
-            </Button>
+            <Link to="/vet/services">
+              <Button className="mt-4 bg-[#DD6B20] text-white hover:bg-[#DD6B20]/80">
+                Adicionar Serviço
+              </Button>
+            </Link>
           </CardContent>
         </Card>
         
@@ -127,9 +129,11 @@ const VeterinarioDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p>Nenhum agendamento encontrado.</p>
-            <Button className="mt-4 bg-[#2D113F] text-white hover:bg-[#2D113F]/80">
-              Ver Calendário
-            </Button>
+            <Link to="/vet/agenda">
+              <Button className="mt-4 bg-[#2D113F] text-white hover:bg-[#2D113F]/80">
+                Ver Calendário
+              </Button>
+            </Link>
           </CardContent>
         </Card>
         

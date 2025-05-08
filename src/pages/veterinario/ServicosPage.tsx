@@ -3,12 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Loader2 } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ServicosTable from '@/components/veterinario/servicos/ServicosTable';
 import ServicoFormDialog from '@/components/veterinario/servicos/ServicoFormDialog';
-import { Loader2 } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
 
 const ServicosPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -16,6 +16,9 @@ const ServicosPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  console.log('ServicosPage renderizado - User ID:', user?.id);
   
   // Buscar taxa de comissão global
   const { data: configComissao } = useQuery({
@@ -41,14 +44,51 @@ const ServicosPage = () => {
     }
   });
   
-  // Buscar serviços do veterinário autenticado
-  const { data: servicos, isLoading, error } = useQuery({
-    queryKey: ['servicos-veterinario'],
+  // Buscar dados do veterinário pelo user_id
+  const { data: veterinario } = useQuery({
+    queryKey: ['veterinario-info'],
     queryFn: async () => {
-      console.log('Buscando serviços do veterinário...');
+      if (!user?.id) throw new Error('Usuário não autenticado');
       
-      // Não precisamos mais obter o ID do usuário explicitamente aqui
-      // as políticas RLS garantirão que apenas os serviços do veterinário sejam retornados
+      console.log('Buscando dados do veterinário para user_id:', user.id);
+      const { data, error } = await supabase
+        .from('veterinarios')
+        .select('id, nome_completo')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Erro ao buscar dados do veterinário:', error);
+        throw error;
+      }
+      
+      console.log('Dados do veterinário encontrados:', data);
+      return data;
+    },
+    enabled: !!user?.id,
+    meta: {
+      onError: (error: any) => {
+        console.error('Erro ao buscar dados do veterinário:', error);
+        toast({
+          title: "Erro ao carregar perfil",
+          description: "Não foi possível carregar seu perfil de veterinário.",
+          variant: "destructive"
+        });
+      }
+    }
+  });
+  
+  // Buscar serviços do veterinário
+  const { data: servicos, isLoading, error } = useQuery({
+    queryKey: ['servicos-veterinario', veterinario?.id],
+    queryFn: async () => {
+      if (!veterinario?.id) {
+        console.log('ID do veterinário não disponível para buscar serviços');
+        return [];
+      }
+      
+      console.log('Buscando serviços para veterinário ID:', veterinario.id);
+      
       const { data, error } = await supabase
         .from('servicos')
         .select(`
@@ -57,6 +97,7 @@ const ServicosPage = () => {
             procedimento:procedimentos (*)
           )
         `)
+        .eq('veterinario_id', veterinario.id)
         .order('nome');
 
       if (error) {
@@ -67,9 +108,10 @@ const ServicosPage = () => {
       console.log('Serviços encontrados:', data?.length || 0);
       return data || [];
     },
+    enabled: !!veterinario?.id,
     meta: {
       onError: (error: any) => {
-        console.error('Erro completo ao carregar serviços:', error);
+        console.error('Erro ao carregar serviços:', error);
         toast({
           title: "Erro ao carregar serviços",
           description: error.message || "Não foi possível carregar seus serviços.",
@@ -132,7 +174,7 @@ const ServicosPage = () => {
     setServicoToEdit(null);
     
     if (shouldRefresh) {
-      queryClient.invalidateQueries({ queryKey: ['servicos-veterinario'] });
+      queryClient.invalidateQueries({ queryKey: ['servicos-veterinario', veterinario?.id] });
     }
   };
 
@@ -145,6 +187,19 @@ const ServicosPage = () => {
       servico.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
+
+  // Se não houver dados do veterinário ainda, mostrar carregando
+  if (!veterinario && !error) {
+    return (
+      <div className="container py-8">
+        <h1 className="text-2xl font-bold mb-6">Meus Serviços</h1>
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-[#DD6B20]" />
+          <span className="ml-2">Carregando perfil de veterinário...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-8">
@@ -177,7 +232,7 @@ const ServicosPage = () => {
         <div className="text-center py-10 text-gray-500">
           <p className="mb-4 text-red-500 font-medium">Não foi possível carregar os serviços</p>
           <Button 
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['servicos-veterinario'] })}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['servicos-veterinario', veterinario?.id] })}
             variant="outline"
           >
             Tentar novamente
@@ -198,6 +253,7 @@ const ServicosPage = () => {
           onClose={handleCloseDialog} 
           servicoToEdit={servicoToEdit}
           comissaoGlobal={configComissao?.comissao_padrao || 10}
+          veterinarioId={veterinario?.id}
         />
       )}
     </div>
