@@ -181,7 +181,7 @@ const SearchVeterinarioPage = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="">Todas especialidades</SelectItem>
+                <SelectItem value="todas">Todas especialidades</SelectItem>
                 {especialidades.map((esp) => (
                   <SelectItem key={esp} value={esp}>{esp}</SelectItem>
                 ))}
