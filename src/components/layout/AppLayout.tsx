@@ -20,13 +20,13 @@ const AppLayout = ({ userRole, children }: AppLayoutProps) => {
   const renderSidebar = () => {
     switch (userRole) {
       case 'tutor':
-        return <TutorSidebar closeSidebar={closeSidebar} />;
+        return <TutorSidebar />;
       case 'veterinario':
-        return <VeterinarySidebar closeSidebar={closeSidebar} />;
+        return <VeterinarySidebar />;
       case 'admin':
         return <AdminSidebar />;
       default:
-        return <TutorSidebar closeSidebar={closeSidebar} />;
+        return <TutorSidebar />;
     }
   };
 
