@@ -12,12 +12,21 @@ const VeterinarioDashboard: React.FC = () => {
   const [perfil, setPerfil] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showProfileForm, setShowProfileForm] = useState(false);
+  const [servicosCount, setServicosCount] = useState(0);
+  const [agendamentosCount, setAgendamentosCount] = useState(0);
   
   useEffect(() => {
     if (user) {
       fetchVeterinarioProfile();
     }
   }, [user]);
+  
+  useEffect(() => {
+    if (perfil?.id) {
+      fetchServicosCount();
+      fetchAgendamentosCount();
+    }
+  }, [perfil]);
   
   const fetchVeterinarioProfile = async () => {
     try {
@@ -60,6 +69,35 @@ const VeterinarioDashboard: React.FC = () => {
       console.error('Erro inesperado:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const fetchServicosCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('servicos')
+        .select('*', { count: 'exact', head: true })
+        .eq('veterinario_id', perfil.id);
+      
+      if (error) throw error;
+      setServicosCount(count || 0);
+    } catch (error) {
+      console.error('Erro ao buscar quantidade de serviços:', error);
+    }
+  };
+  
+  const fetchAgendamentosCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('agendamentos')
+        .select('*', { count: 'exact', head: true })
+        .eq('veterinario_id', perfil.id)
+        .in('status', ['pendente', 'confirmado']);
+      
+      if (error) throw error;
+      setAgendamentosCount(count || 0);
+    } catch (error) {
+      console.error('Erro ao buscar quantidade de agendamentos:', error);
     }
   };
   
@@ -137,10 +175,10 @@ const VeterinarioDashboard: React.FC = () => {
             <CardDescription>Gerencie os serviços que você oferece</CardDescription>
           </CardHeader>
           <CardContent>
-            <p>Você ainda não cadastrou nenhum serviço.</p>
+            <p>{servicosCount > 0 ? `${servicosCount} serviço(s) cadastrado(s).` : 'Você ainda não cadastrou nenhum serviço.'}</p>
             <Link to="/vet/services">
               <Button className="mt-4 bg-[#DD6B20] text-white hover:bg-[#DD6B20]/80">
-                Adicionar Serviço
+                {servicosCount > 0 ? 'Gerenciar Serviços' : 'Adicionar Serviço'}
               </Button>
             </Link>
           </CardContent>
@@ -152,10 +190,10 @@ const VeterinarioDashboard: React.FC = () => {
             <CardDescription>Suas consultas agendadas</CardDescription>
           </CardHeader>
           <CardContent>
-            <p>Nenhum agendamento encontrado.</p>
-            <Link to="/vet/agenda">
+            <p>{agendamentosCount > 0 ? `${agendamentosCount} agendamento(s) pendente(s).` : 'Nenhum agendamento encontrado.'}</p>
+            <Link to="/vet/agendamentos">
               <Button className="mt-4 bg-[#2D113F] text-white hover:bg-[#2D113F]/80">
-                Ver Calendário
+                {agendamentosCount > 0 ? 'Ver Agendamentos' : 'Ver Calendário'}
               </Button>
             </Link>
           </CardContent>

@@ -11,30 +11,73 @@ const TutorDashboard = () => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const [petCount, setPetCount] = useState<number>(0);
+  const [appointmentCount, setAppointmentCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [tutorId, setTutorId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      fetchPetCount();
+      fetchTutorId();
     }
   }, [user]);
 
-  const fetchPetCount = async () => {
+  useEffect(() => {
+    if (tutorId) {
+      fetchPetCount();
+      fetchAppointmentCount();
+    }
+  }, [tutorId]);
+
+  const fetchTutorId = async () => {
     if (!user) return;
     
     try {
-      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('tutores')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) throw error;
+      setTutorId(data.id);
+    } catch (error: any) {
+      console.error('Erro ao buscar tutor_id:', error.message);
+    }
+  };
+
+  const fetchPetCount = async () => {
+    if (!tutorId) return;
+    
+    try {
       const { count, error } = await supabase
         .from('pets')
         .select('*', { count: 'exact', head: true })
-        .eq('tutor_id', user.id);
+        .eq('tutor_id', tutorId);
       
       if (error) throw error;
       
       setPetCount(count || 0);
     } catch (error: any) {
       console.error('Erro ao buscar quantidade de pets:', error.message);
-    } finally {
+    }
+  };
+
+  const fetchAppointmentCount = async () => {
+    if (!tutorId) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('agendamentos')
+        .select('*', { count: 'exact', head: true })
+        .eq('tutor_id', tutorId)
+        .in('status', ['pendente', 'confirmado']);
+      
+      if (error) throw error;
+      
+      setAppointmentCount(count || 0);
+      setIsLoading(false);
+    } catch (error: any) {
+      console.error('Erro ao buscar agendamentos:', error.message);
       setIsLoading(false);
     }
   };
@@ -103,7 +146,15 @@ const TutorDashboard = () => {
             </div>
             <h2 className="text-lg font-semibold">Próximas Consultas</h2>
           </div>
-          <p className="text-gray-500">Nenhuma consulta agendada.</p>
+          {isLoading ? (
+            <p className="text-gray-500">Carregando...</p>
+          ) : (
+            <p className="text-gray-500">
+              {appointmentCount === 0 ? 'Nenhuma consulta agendada.' : 
+               appointmentCount === 1 ? '1 consulta agendada.' : 
+               `${appointmentCount} consultas agendadas.`}
+            </p>
+          )}
         </div>
         
         <div 

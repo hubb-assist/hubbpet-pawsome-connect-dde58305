@@ -11,6 +11,7 @@ import VeterinarioDashboard from '@/pages/veterinario/VeterinarioDashboard';
 import TutorDashboard from '@/pages/tutor/TutorDashboard';
 import TutorProfilePage from '@/pages/tutor/TutorProfilePage';
 import PetsPage from '@/pages/tutor/PetsPage';
+import AgendamentosPage from '@/pages/tutor/AgendamentosPage';
 import NotFound from '@/pages/NotFound';
 import AppLayout from '@/components/layout/AppLayout';
 import AdminRoutes from '@/pages/admin/AdminRoutes';
@@ -121,6 +122,7 @@ const App = () => {
                     <Route path="/" element={<TutorDashboard />} />
                     <Route path="/perfil" element={<TutorProfilePage />} />
                     <Route path="/pets" element={<PetsPage />} />
+                    <Route path="/appointments" element={<AgendamentosPage />} />
                     <Route path="/search" element={<SearchVeterinarioPage />} />
                     <Route path="/veterinario/:id" element={<VeterinarioDetalhePage />} />
                   </Routes>
