@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Pet } from '@/domain/models/User';
+import { Pet, PetSexo } from '@/domain/models/User';
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
@@ -48,7 +48,7 @@ const petSchema = z.object({
   }),
   breed: z.string().optional(),
   birthdate: z.string().optional(),
-  sexo: z.enum(["macho", "femea", "outro"]).optional(),
+  sexo: z.enum(["macho", "femea"]).optional(),
   peso: z.coerce.number().optional(),
 });
 
@@ -260,7 +260,6 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
                       <SelectContent>
                         <SelectItem value="macho">Macho</SelectItem>
                         <SelectItem value="femea">Fêmea</SelectItem>
-                        <SelectItem value="outro">Outro</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

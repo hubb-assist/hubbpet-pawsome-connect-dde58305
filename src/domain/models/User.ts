@@ -5,6 +5,11 @@ export enum UserRole {
   ADMIN = 'admin'
 }
 
+export enum PetSexo {
+  MACHO = 'macho',
+  FEMEA = 'femea'
+}
+
 export interface User {
   id: string;
   name: string;
@@ -42,7 +47,7 @@ export interface Pet {
   type: 'dog' | 'cat' | 'bird' | 'reptile' | 'other';
   breed: string;
   birthdate?: Date;
-  sexo?: 'macho' | 'femea' | 'outro';
+  sexo?: PetSexo;
   peso?: number;
   tutorId: string;
   createdAt: Date;

@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Pet } from '@/domain/models/User';
+import { Pet, PetSexo } from '@/domain/models/User';
 import PetFormDialog from '@/components/tutor/PetFormDialog';
 import DeleteConfirmationDialog from '@/components/tutor/DeleteConfirmationDialog';
 
@@ -58,7 +58,7 @@ const PetsPage = () => {
         type: pet.especie as 'dog' | 'cat' | 'bird' | 'reptile' | 'other',
         breed: pet.raca || '',
         birthdate: pet.data_nascimento ? new Date(pet.data_nascimento) : undefined,
-        sexo: pet.sexo as 'macho' | 'femea' | 'outro' | undefined,
+        sexo: pet.sexo as PetSexo | undefined,
         peso: pet.peso ? Number(pet.peso) : undefined,
         tutorId: pet.tutor_id,
         createdAt: new Date(pet.created_at),
