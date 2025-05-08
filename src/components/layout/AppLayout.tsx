@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import TutorSidebar from './TutorSidebar';
 import VeterinarySidebar from './VeterinarySidebar';
 import AdminSidebar from './AdminSidebar';
@@ -11,16 +11,22 @@ interface AppLayoutProps {
 }
 
 const AppLayout = ({ userRole, children }: AppLayoutProps) => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
   const renderSidebar = () => {
     switch (userRole) {
       case 'tutor':
-        return <TutorSidebar />;
+        return <TutorSidebar closeSidebar={closeSidebar} />;
       case 'veterinario':
-        return <VeterinarySidebar />;
+        return <VeterinarySidebar closeSidebar={closeSidebar} />;
       case 'admin':
         return <AdminSidebar />;
       default:
-        return <TutorSidebar />;
+        return <TutorSidebar closeSidebar={closeSidebar} />;
     }
   };
 

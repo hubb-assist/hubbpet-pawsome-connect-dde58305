@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -19,6 +19,11 @@ type VeterinarySidebarProps = {
 const VeterinarySidebar = ({ closeSidebar = () => {} }: VeterinarySidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  const toggleSidebar = () => {
+    setIsExpanded(!isExpanded);
+  };
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -27,27 +32,27 @@ const VeterinarySidebar = ({ closeSidebar = () => {} }: VeterinarySidebarProps) 
   const navigationItems = [
     { 
       path: '/vet', 
-      icon: <LayoutDashboard className="h-5 w-5" />, 
+      icon: LayoutDashboard, 
       text: 'Dashboard' 
     },
     { 
       path: '/vet/perfil', 
-      icon: <User className="h-5 w-5" />, 
+      icon: User, 
       text: 'Meu Perfil' 
     },
     { 
       path: '/vet/services', 
-      icon: <Stethoscope className="h-5 w-5" />, 
+      icon: Stethoscope, 
       text: 'Serviços' 
     },
     { 
       path: '/vet/agenda', 
-      icon: <Calendar className="h-5 w-5" />, 
+      icon: Calendar, 
       text: 'Disponibilidade' 
     },
     { 
       path: '/vet/agendamentos', 
-      icon: <ClipboardList className="h-5 w-5" />, 
+      icon: ClipboardList, 
       text: 'Agendamentos' 
     }
   ];
@@ -58,17 +63,18 @@ const VeterinarySidebar = ({ closeSidebar = () => {} }: VeterinarySidebarProps) 
   };
 
   return (
-    <SidebarWrapper>
+    <SidebarWrapper isExpanded={isExpanded} toggleSidebar={toggleSidebar}>
       <div className="space-y-1">
         {navigationItems.map((item) => (
           <SidebarItem
             key={item.path}
             icon={item.icon}
-            active={isActive(item.path)}
+            title={item.text}
+            href={item.path}
+            isActive={isActive(item.path)}
+            isExpanded={isExpanded}
             onClick={() => handleNavigate(item.path)}
-          >
-            {item.text}
-          </SidebarItem>
+          />
         ))}
       </div>
     </SidebarWrapper>

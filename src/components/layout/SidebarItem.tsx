@@ -9,6 +9,7 @@ interface SidebarItemProps {
   href: string;
   isActive: boolean;
   isExpanded: boolean;
+  onClick?: () => void;
   onExpandClick?: () => void;
 }
 
@@ -18,6 +19,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   href,
   isActive,
   isExpanded,
+  onClick,
   onExpandClick
 }) => {
   const navigate = useNavigate();
@@ -30,8 +32,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
       return;
     }
     
-    console.log(`Navegando para: ${href}`);
-    navigate(href);
+    if (onClick) {
+      onClick();
+    } else {
+      console.log(`Navegando para: ${href}`);
+      navigate(href);
+    }
   };
 
   return (
