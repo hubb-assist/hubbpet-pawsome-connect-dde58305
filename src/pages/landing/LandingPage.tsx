@@ -32,7 +32,7 @@ const LandingPage = () => {
             <div className="md:w-1/2 flex justify-center relative">
               <img alt="Cachorro fofo" style={{
               height: '350px'
-            }} src="/lovable-uploads/ef0a2cf8-f859-464b-8468-cbb0bb7ae39f.png" className="rounded-lg w-full max-w-md shadow-lg z-10 object-scale-down" />
+            }} className="rounded-lg w-full max-w-md shadow-lg z-10 object-contain" src="/lovable-uploads/7243cf0c-a49d-4ab5-9bd8-a80e9fdde964.png" />
               {/* Elementos decorativos */}
               <div className="absolute -top-6 -left-6 w-12 h-12 rounded-full bg-hubbpet-secondary opacity-50"></div>
               <div className="absolute top-1/4 -right-6 w-8 h-8 rounded-full bg-hubbpet-auxiliary opacity-50"></div>
