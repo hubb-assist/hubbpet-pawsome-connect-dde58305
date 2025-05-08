@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
@@ -55,11 +54,15 @@ const ServicoFormDialog = ({
         .select('*')
         .order('nome');
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar procedimentos:", error);
+        throw error;
+      }
       return data || [];
     },
     meta: {
       onError: (error: any) => {
+        console.error("Erro completo ao carregar procedimentos:", error);
         toast({
           title: "Erro ao carregar procedimentos",
           description: error.message || "Não foi possível carregar a lista de procedimentos.",
@@ -133,16 +136,20 @@ const ServicoFormDialog = ({
       const duracaoNumerica = parseInt(duracaoMinutos);
 
       // Obter o ID do veterinário atual (usuário autenticado)
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      if (!user) {
+      if (userError || !user) {
+        console.error("Erro ao obter usuário:", userError);
         throw new Error("Usuário não autenticado");
       }
 
+      console.log("User ID para inserção de serviço:", user.id);
+      
       let servicoId;
 
       if (servicoToEdit) {
         // Atualizar serviço existente
+        console.log("Atualizando serviço existente:", servicoToEdit.id);
         const { data, error } = await supabase
           .from('servicos')
           .update({
@@ -156,7 +163,11 @@ const ServicoFormDialog = ({
           .select('id')
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Erro ao atualizar serviço:", error);
+          throw error;
+        }
+        
         servicoId = servicoToEdit.id;
 
         // Excluir todas as associações anteriores de procedimentos
@@ -165,10 +176,14 @@ const ServicoFormDialog = ({
           .delete()
           .eq('servico_id', servicoId);
 
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+          console.error("Erro ao excluir procedimentos associados:", deleteError);
+          throw deleteError;
+        }
 
       } else {
         // Criar novo serviço
+        console.log("Criando novo serviço para veterinário:", user.id);
         const { data, error } = await supabase
           .from('servicos')
           .insert({
@@ -176,13 +191,22 @@ const ServicoFormDialog = ({
             descricao: descricao || null,
             preco: precoNumerico,
             duracao_minutos: duracaoNumerica,
-            veterinario_id: user.id  // Adicionando o ID do veterinário atual
+            veterinario_id: user.id
           })
           .select('id')
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Erro na inserção do serviço:", error);
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error("Não foi possível obter o ID do serviço criado");
+        }
+        
         servicoId = data.id;
+        console.log("Serviço criado com ID:", servicoId);
       }
 
       // Inserir novas associações de procedimentos
@@ -192,11 +216,15 @@ const ServicoFormDialog = ({
           procedimento_id: procId
         }));
 
+        console.log("Inserindo procedimentos:", procedimentosInsert);
         const { error: insertError } = await supabase
           .from('procedimentos_servicos')
           .insert(procedimentosInsert);
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error("Erro ao inserir procedimentos associados:", insertError);
+          throw insertError;
+        }
       }
 
       toast({
@@ -209,6 +237,7 @@ const ServicoFormDialog = ({
       onClose(true);
 
     } catch (error: any) {
+      console.error("Erro completo ao salvar serviço:", error);
       toast({
         title: "Erro ao salvar",
         description: error.message || "Não foi possível salvar o serviço.",

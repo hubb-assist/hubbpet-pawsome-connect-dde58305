@@ -32,14 +32,28 @@ const ServicosPage = () => {
     meta: {
       onError: (error: any) => {
         console.error('Erro ao buscar comissão padrão:', error);
+        toast({
+          title: "Erro ao buscar comissão padrão",
+          description: error.message || "Não foi possível carregar configurações.",
+          variant: "destructive"
+        });
       }
     }
   });
   
   // Buscar serviços do veterinário
-  const { data: servicos, isLoading } = useQuery({
+  const { data: servicos, isLoading, error } = useQuery({
     queryKey: ['servicos-veterinario'],
     queryFn: async () => {
+      console.log('Buscando serviços do veterinário...');
+      
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        throw new Error('Usuário não autenticado: ' + authError.message);
+      }
+      
+      console.log('User ID:', userData?.user?.id);
+      
       const { data, error } = await supabase
         .from('servicos')
         .select(`
@@ -48,13 +62,20 @@ const ServicosPage = () => {
             procedimento:procedimentos (*)
           )
         `)
+        .eq('veterinario_id', userData.user.id)
         .order('nome');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar serviços:', error);
+        throw error;
+      }
+      
+      console.log('Serviços encontrados:', data?.length || 0);
       return data || [];
     },
     meta: {
       onError: (error: any) => {
+        console.error('Erro completo ao carregar serviços:', error);
         toast({
           title: "Erro ao carregar serviços",
           description: error.message || "Não foi possível carregar seus serviços.",
@@ -63,6 +84,13 @@ const ServicosPage = () => {
       }
     }
   });
+
+  // Loga erros para debug
+  useEffect(() => {
+    if (error) {
+      console.error('Erro ao carregar serviços:', error);
+    }
+  }, [error]);
 
   const handleEditServico = (servico: any) => {
     setServicoToEdit(servico);
@@ -150,6 +178,16 @@ const ServicosPage = () => {
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-[#DD6B20]" />
+        </div>
+      ) : error ? (
+        <div className="text-center py-10 text-gray-500">
+          <p className="mb-4 text-red-500 font-medium">Não foi possível carregar os serviços</p>
+          <Button 
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['servicos-veterinario'] })}
+            variant="outline"
+          >
+            Tentar novamente
+          </Button>
         </div>
       ) : (
         <ServicosTable 

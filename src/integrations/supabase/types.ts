@@ -626,6 +626,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      servico_pertence_ao_veterinario: {
+        Args: { servico_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       agendamento_status: "pendente" | "confirmado" | "realizado" | "cancelado"
