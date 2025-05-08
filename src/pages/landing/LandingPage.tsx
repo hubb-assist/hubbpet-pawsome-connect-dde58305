@@ -16,33 +16,39 @@ const LandingPage = () => {
               <div className="logo-container mb-6">
                 <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png" alt="HubbPet" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Conectando tutores a veterinários</h1>
-              <p className="text-lg mb-6">Encontre os melhores veterinários da sua região e agende consultas com facilidade.</p>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6 font-['Poppins']">
+                CONECTANDO TUTORES E VETERINÁRIOS EM POUCOS CLIQUES
+              </h1>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/auth">
-                  <Button size="lg" className="bg-hubbpet-secondary hover:bg-hubbpet-secondary/80">
-                    Sou tutor
+                  <Button size="lg" className="bg-hubbpet-auxiliary hover:bg-hubbpet-auxiliary/80 font-['Poppins'] uppercase">
+                    Encontre um veterinário
                   </Button>
                 </Link>
                 <Link to="/auth">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-hubbpet-primary">
-                    Sou veterinário
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-hubbpet-primary font-['Poppins'] uppercase">
+                    É um veterinário? Cadastre-se
                   </Button>
                 </Link>
               </div>
             </div>
-            <div className="md:w-1/2 flex justify-center">
+            <div className="md:w-1/2 flex justify-center relative">
               <img 
-                src="https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&q=80" 
-                alt="Veterinário com pet" 
-                className="rounded-lg w-full max-w-md object-cover shadow-lg"
+                src="https://images.unsplash.com/photo-1578463507126-656a3bb93aa4?ixlib=rb-4.0.3&auto=format&fit=crop&q=80"
+                alt="Cachorro fofo" 
+                className="rounded-lg w-full max-w-md object-cover shadow-lg z-10"
                 style={{ height: '350px' }}
               />
+              {/* Elementos decorativos */}
+              <div className="absolute -top-6 -left-6 w-12 h-12 rounded-full bg-hubbpet-secondary opacity-50"></div>
+              <div className="absolute top-1/4 -right-6 w-8 h-8 rounded-full bg-hubbpet-auxiliary opacity-50"></div>
+              <div className="absolute bottom-10 -left-10 w-16 h-16 rounded-full border-2 border-hubbpet-secondary opacity-50"></div>
             </div>
           </div>
         </div>
       </header>
 
+      {/* Resto da página mantido igual */}
       {/* How it Works Section */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
