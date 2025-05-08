@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -46,11 +45,29 @@ const PetsPage = () => {
     
     setIsLoading(true);
     try {
-      console.log("Buscando pets para o usuário:", user.id);
+      // Primeiro, buscar o ID real do tutor
+      const { data: tutor, error: tutorError } = await supabase
+        .from('tutores')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (tutorError) {
+        console.error("Erro ao buscar perfil do tutor:", tutorError);
+        toast({
+          title: "Erro de perfil",
+          description: "Seu perfil de tutor não está disponível. Por favor, faça logout e login novamente.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("Buscando pets para o tutor:", tutor.id);
       const { data, error } = await supabase
         .from('pets')
         .select('*')
-        .eq('tutor_id', user.id)
+        .eq('tutor_id', tutor.id)
         .order('nome', { ascending: true });
       
       if (error) {

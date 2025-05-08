@@ -110,6 +110,30 @@ export default function AuthForm() {
       console.log("Tentando registrar com:", data.email);
       // Sempre registramos como "tutor" já que removemos a opção de seleção
       await signUp(data.email, data.password, data.name, "tutor");
+      
+      // Após registro bem-sucedido, tenta criar o perfil do tutor
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        const userEmail = session?.user?.email;
+        
+        if (userId && userEmail) {
+          console.log("Criando perfil de tutor para:", userId);
+          const { error: tutorError } = await supabase.from('tutores').insert({
+            user_id: userId,
+            nome: data.name,
+            email: userEmail
+          });
+          
+          if (tutorError) {
+            console.error("Erro ao criar perfil de tutor:", tutorError);
+          }
+        }
+      } catch (profileError) {
+        console.error("Erro ao configurar perfil:", profileError);
+        // Não bloqueia o fluxo se falhar aqui, pois o perfil pode ser criado depois
+      }
+      
       setAuthMode("login");
       setNeedsEmailConfirmation(true);
       setEmailForResend(data.email);

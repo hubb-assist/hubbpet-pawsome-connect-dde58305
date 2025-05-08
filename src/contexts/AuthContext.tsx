@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         console.log("Evento de autenticação:", event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
@@ -50,6 +50,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Evitar loop infinito ao chamar funções Supabase dentro do callback
           setTimeout(async () => {
             await fetchUserRole(currentSession.user.id);
+            
+            // Se for evento de login, verificar/criar o perfil de tutor se necessário
+            if (event === 'SIGNED_IN') {
+              const { data: userRole } = await supabase.rpc('get_user_role', { 
+                user_id: currentSession.user.id 
+              });
+              
+              // Se for um tutor, verifica se já tem perfil na tabela tutores
+              if (userRole === 'tutor') {
+                const { data: tutorProfile, error: tutorError } = await supabase
+                  .from('tutores')
+                  .select('*')
+                  .eq('user_id', currentSession.user.id)
+                  .maybeSingle();
+                
+                // Se não tiver perfil, cria um
+                if (!tutorProfile && !tutorError) {
+                  console.log("Criando perfil de tutor para usuário existente:", currentSession.user.id);
+                  
+                  const userData = currentSession.user.user_metadata;
+                  const userName = userData.name || userData.full_name || 'Usuário';
+                  
+                  await supabase.from('tutores').insert({
+                    user_id: currentSession.user.id,
+                    nome: userName,
+                    email: currentSession.user.email
+                  });
+                }
+              }
+            }
           }, 0);
         } else {
           setUserRole(null);
