@@ -1,13 +1,10 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Calendar, User } from 'lucide-react';
-
 const LandingPage = () => {
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
       <header className="bg-hubbpet-primary text-white py-16">
         <div className="container mx-auto px-4">
@@ -33,12 +30,9 @@ const LandingPage = () => {
               </div>
             </div>
             <div className="md:w-1/2 flex justify-center relative">
-              <img 
-                src="https://images.unsplash.com/photo-1578463507126-656a3bb93aa4?ixlib=rb-4.0.3&auto=format&fit=crop&q=80"
-                alt="Cachorro fofo" 
-                className="rounded-lg w-full max-w-md object-cover shadow-lg z-10"
-                style={{ height: '350px' }}
-              />
+              <img alt="Cachorro fofo" style={{
+              height: '350px'
+            }} src="/lovable-uploads/ef0a2cf8-f859-464b-8468-cbb0bb7ae39f.png" className="rounded-lg w-full max-w-md shadow-lg z-10 object-scale-down" />
               {/* Elementos decorativos */}
               <div className="absolute -top-6 -left-6 w-12 h-12 rounded-full bg-hubbpet-secondary opacity-50"></div>
               <div className="absolute top-1/4 -right-6 w-8 h-8 rounded-full bg-hubbpet-auxiliary opacity-50"></div>
@@ -143,11 +137,7 @@ const LandingPage = () => {
               </ul>
             </div>
             <div className="md:w-1/2">
-              <img 
-                src="https://images.unsplash.com/photo-1628009368231-7bb7cfcbf266?auto=format&fit=crop&q=80" 
-                alt="Veterinário examinando um cachorro" 
-                className="rounded-lg w-full shadow-lg"
-              />
+              <img src="https://images.unsplash.com/photo-1628009368231-7bb7cfcbf266?auto=format&fit=crop&q=80" alt="Veterinário examinando um cachorro" className="rounded-lg w-full shadow-lg" />
             </div>
           </div>
         </div>
@@ -211,8 +201,6 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default LandingPage;
