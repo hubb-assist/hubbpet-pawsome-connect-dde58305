@@ -41,19 +41,14 @@ const ServicosPage = () => {
     }
   });
   
-  // Buscar serviços do veterinário
+  // Buscar serviços do veterinário autenticado
   const { data: servicos, isLoading, error } = useQuery({
     queryKey: ['servicos-veterinario'],
     queryFn: async () => {
       console.log('Buscando serviços do veterinário...');
       
-      const { data: userData, error: authError } = await supabase.auth.getUser();
-      if (authError) {
-        throw new Error('Usuário não autenticado: ' + authError.message);
-      }
-      
-      console.log('User ID:', userData?.user?.id);
-      
+      // Não precisamos mais obter o ID do usuário explicitamente aqui
+      // as políticas RLS garantirão que apenas os serviços do veterinário sejam retornados
       const { data, error } = await supabase
         .from('servicos')
         .select(`
@@ -62,7 +57,6 @@ const ServicosPage = () => {
             procedimento:procedimentos (*)
           )
         `)
-        .eq('veterinario_id', userData.user.id)
         .order('nome');
 
       if (error) {
