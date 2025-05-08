@@ -154,12 +154,12 @@ const PetsPage = () => {
                 <div className="space-y-2">
                   {pet.birthdate && (
                     <p className="text-sm">
-                      Data de Nascimento: {new Date(pet.birthdate).toLocaleDateString()}
+                      Data de Nascimento: {pet.birthdate.toLocaleDateString()}
                     </p>
                   )}
                   {pet.sexo && (
                     <p className="text-sm">
-                      Sexo: {pet.sexo.charAt(0).toUpperCase() + pet.sexo.slice(1)}
+                      Sexo: {pet.sexo === 'macho' ? 'Macho' : 'Fêmea'}
                     </p>
                   )}
                   {pet.peso && (
