@@ -1,275 +1,236 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
+import { Bell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { playNotificationSound } from '@/assets/notification-sound';
 
+// Tipagem para os agendamentos
 type Agendamento = {
   id: string;
+  created_at: string;
   data_hora: string;
-  status: 'pendente' | 'confirmado' | 'realizado' | 'cancelado';
+  status: string;
+  servico: {
+    nome: string;
+    duracao_minutos: number;
+  };
   tutor: {
     nome: string;
     telefone: string | null;
+    email: string;
   };
   pet: {
     nome: string;
     especie: string;
-  };
-  servico: {
-    nome: string;
-    duracao_minutos: number;
-    preco: number;
+    raca: string | null;
   };
 };
 
 const AgendamentoVeterinarioPage = () => {
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-  const [veterinarioId, setVeterinarioId] = useState<string | null>(null);
-  const [statusFiltro, setStatusFiltro] = useState<'pendente' | 'confirmado' | 'realizado' | 'cancelado' | 'todos'>('todos');
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [enableSound, setEnableSound] = useState(true);
+  const lastAgendamentoCountRef = useRef<number | null>(null);
+  const realTimeSubscription = useRef<any>(null);
+  
   useEffect(() => {
-    if (user) {
-      buscarPerfilVeterinario();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (veterinarioId) {
-      carregarAgendamentos();
-    }
-  }, [veterinarioId, statusFiltro]);
-
-  const buscarPerfilVeterinario = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('veterinarios')
-        .select('id')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (error) throw error;
+    carregarAgendamentos();
+    
+    // Configurando a assinatura em tempo real
+    const channel = supabase
+      .channel('agendamentos-changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'agendamentos',
+          filter: `veterinario_id=eq.${user?.id}`
+        }, 
+        (payload) => {
+          console.log('Novo agendamento recebido:', payload);
+          if (enableSound) {
+            playNotificationSound();
+            toast("Novo agendamento recebido!", {
+              description: "Um paciente acabou de agendar uma consulta com você."
+            });
+          }
+          carregarAgendamentos();
+        }
+      )
+      .subscribe();
       
-      setVeterinarioId(data.id);
-    } catch (error) {
-      console.error('Erro ao buscar perfil:', error);
-      toast("Erro ao carregar perfil", {
-        description: "Não foi possível recuperar seu perfil de veterinário."
-      });
-    }
-  };
+    realTimeSubscription.current = channel;
+    
+    // Limpeza ao desmontar
+    return () => {
+      if (realTimeSubscription.current) {
+        supabase.removeChannel(realTimeSubscription.current);
+      }
+    };
+  }, [user, enableSound]);
 
   const carregarAgendamentos = async () => {
+    if (!user) return;
+    
     try {
       setIsLoading(true);
       
-      let query = supabase
+      const { data, error } = await supabase
         .from('agendamentos')
         .select(`
           id,
+          created_at,
           data_hora,
           status,
-          tutores!inner(nome, telefone),
-          pets!inner(nome, especie),
-          servicos!inner(nome, duracao_minutos, preco)
+          servico:servico_id (
+            nome,
+            duracao_minutos
+          ),
+          tutor:tutor_id (
+            nome,
+            telefone,
+            email
+          ),
+          pet:pet_id (
+            nome,
+            especie,
+            raca
+          )
         `)
-        .eq('veterinario_id', veterinarioId);
-      
-      // Filtrar por status se não for 'todos'
-      if (statusFiltro !== 'todos') {
-        query = query.eq('status', statusFiltro);
-      }
-      
-      const { data, error } = await query.order('data_hora', { ascending: true });
+        .eq('veterinario_id', user.id)
+        .order('data_hora', { ascending: true });
       
       if (error) throw error;
       
-      // Mapear para o formato esperado
-      const agendamentosMapeados = data.map(item => ({
-        id: item.id,
-        data_hora: item.data_hora,
-        status: item.status,
-        tutor: {
-          nome: item.tutores.nome,
-          telefone: item.tutores.telefone
-        },
-        pet: {
-          nome: item.pets.nome,
-          especie: item.pets.especie
-        },
-        servico: {
-          nome: item.servicos.nome,
-          duracao_minutos: item.servicos.duracao_minutos,
-          preco: item.servicos.preco
-        }
-      }));
+      // Verificar se há novos agendamentos para notificar
+      if (lastAgendamentoCountRef.current !== null && 
+          data.length > lastAgendamentoCountRef.current && 
+          enableSound) {
+        playNotificationSound();
+      }
       
-      setAgendamentos(agendamentosMapeados);
-      
-    } catch (error) {
-      console.error('Erro ao carregar agendamentos:', error);
+      lastAgendamentoCountRef.current = data.length;
+      setAgendamentos(data || []);
+    } catch (error: any) {
+      console.error('Erro ao carregar agendamentos:', error.message);
       toast("Erro ao carregar agendamentos", {
-        description: "Não foi possível carregar seus agendamentos."
+        description: "Não foi possível obter seus agendamentos. Tente novamente mais tarde."
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const atualizarStatusAgendamento = async (id: string, novoStatus: 'pendente' | 'confirmado' | 'realizado' | 'cancelado') => {
+  const atualizarStatusAgendamento = async (id: string, novoStatus: string) => {
     try {
       const { error } = await supabase
         .from('agendamentos')
         .update({ status: novoStatus })
         .eq('id', id);
-      
+        
       if (error) throw error;
       
       toast("Status atualizado", {
-        description: "O status do agendamento foi atualizado com sucesso."
+        description: `Agendamento ${novoStatus === 'confirmado' ? 'confirmado' : 'rejeitado'} com sucesso.`
       });
       
-      // Atualizar a lista
-      setAgendamentos(agendamentos.map(ag => 
-        ag.id === id ? { ...ag, status: novoStatus } : ag
-      ));
-      
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error);
-      toast("Erro ao atualizar", {
-        description: "Não foi possível atualizar o status deste agendamento."
+      carregarAgendamentos();
+    } catch (error: any) {
+      console.error('Erro ao atualizar status:', error.message);
+      toast("Erro ao atualizar status", {
+        description: "Não foi possível atualizar o status. Tente novamente."
       });
     }
   };
-
-  const formatarDataHora = (dataHora: string) => {
-    const date = new Date(dataHora);
-    return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+  
+  const getBadgeClass = (status: string) => {
+    switch (status) {
+      case 'pendente':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'confirmado':
+        return 'bg-green-100 text-green-800';
+      case 'cancelado':
+        return 'bg-red-100 text-red-800';
+      case 'concluido':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const renderStatus = (status: 'pendente' | 'confirmado' | 'realizado' | 'cancelado') => {
-    const statusConfig = {
-      pendente: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pendente' },
-      confirmado: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Confirmado' },
-      realizado: { bg: 'bg-green-100', text: 'text-green-800', label: 'Realizado' },
-      cancelado: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelado' },
-    };
-
-    const config = statusConfig[status];
-    
-    return (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${config.bg} ${config.text}`}>
-        {config.label}
-      </span>
-    );
+  const formatarData = (dataString: string) => {
+    const data = new Date(dataString);
+    return format(data, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   };
-
-  if (!veterinarioId) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-red-600">Perfil não encontrado</h2>
-        <p className="mt-2">Você precisa completar seu perfil de veterinário para acessar esta página.</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Meus Agendamentos</h1>
-      
-      <div className="mb-6">
-        <Tabs defaultValue="todos" onValueChange={(v) => setStatusFiltro(v as any)}>
-          <TabsList>
-            <TabsTrigger value="todos">Todos</TabsTrigger>
-            <TabsTrigger value="pendente">Pendentes</TabsTrigger>
-            <TabsTrigger value="confirmado">Confirmados</TabsTrigger>
-            <TabsTrigger value="realizado">Realizados</TabsTrigger>
-            <TabsTrigger value="cancelado">Cancelados</TabsTrigger>
-          </TabsList>
-        </Tabs>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Meus Agendamentos</h1>
+        
+        <div className="flex items-center space-x-2">
+          <Bell className={enableSound ? "text-hubbpet-primary" : "text-gray-400"} size={20} />
+          <Switch 
+            checked={enableSound} 
+            onCheckedChange={setEnableSound} 
+          />
+          <span className="text-sm text-gray-600">Som de notificação</span>
+        </div>
       </div>
-
+      
       {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2D113F]"></div>
+        <div className="flex justify-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-hubbpet-primary"></div>
         </div>
       ) : agendamentos.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <p className="text-gray-500">Você não possui agendamentos {statusFiltro !== 'todos' ? `com status ${statusFiltro}` : ''}.</p>
-          </CardContent>
-        </Card>
+        <div className="text-center p-8 bg-white rounded-lg shadow">
+          <p className="text-gray-600">Nenhum agendamento encontrado.</p>
+        </div>
       ) : (
-        <div className="space-y-4">
-          {agendamentos.map(agendamento => (
-            <Card key={agendamento.id} className="overflow-hidden">
-              <CardHeader className="bg-gray-50 py-3">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg">{agendamento.tutor.nome}</CardTitle>
-                  {renderStatus(agendamento.status)}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {agendamentos.map((agendamento) => (
+            <div key={agendamento.id} className="bg-white p-4 rounded-lg shadow">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-medium text-lg">{agendamento.servico.nome}</h3>
+                <span className={`text-xs px-2 py-1 rounded font-medium ${getBadgeClass(agendamento.status)}`}>
+                  {agendamento.status.charAt(0).toUpperCase() + agendamento.status.slice(1)}
+                </span>
+              </div>
+              
+              <div className="space-y-2 mb-4">
+                <p><span className="font-medium">Cliente:</span> {agendamento.tutor.nome}</p>
+                <p><span className="font-medium">Contato:</span> {agendamento.tutor.telefone || agendamento.tutor.email}</p>
+                <p><span className="font-medium">Pet:</span> {agendamento.pet.nome} ({agendamento.pet.especie}{agendamento.pet.raca ? `, ${agendamento.pet.raca}` : ''})</p>
+                <p><span className="font-medium">Data/Hora:</span> {formatarData(agendamento.data_hora)}</p>
+                <p><span className="font-medium">Duração:</span> {agendamento.servico.duracao_minutos} min</p>
+              </div>
+              
+              {agendamento.status === 'pendente' && (
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                    onClick={() => atualizarStatusAgendamento(agendamento.id, 'confirmado')}
+                  >
+                    Confirmar
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                    onClick={() => atualizarStatusAgendamento(agendamento.id, 'cancelado')}
+                  >
+                    Rejeitar
+                  </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="py-4">
-                <div className="flex flex-col md:flex-row md:justify-between gap-4">
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Serviço:</span> {agendamento.servico.nome}</p>
-                    <p><span className="font-medium">Pet:</span> {agendamento.pet.nome} ({agendamento.pet.especie})</p>
-                    <p><span className="font-medium">Data/Hora:</span> {formatarDataHora(agendamento.data_hora)}</p>
-                    <p><span className="font-medium">Duração:</span> {agendamento.servico.duracao_minutos} minutos</p>
-                    {agendamento.tutor.telefone && (
-                      <p><span className="font-medium">Telefone:</span> {agendamento.tutor.telefone}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2 items-start">
-                    {agendamento.status === 'pendente' && (
-                      <>
-                        <Button 
-                          size="sm" 
-                          onClick={() => atualizarStatusAgendamento(agendamento.id, 'confirmado')}
-                          className="bg-[#2D113F] hover:bg-[#2D113F]/80"
-                        >
-                          Confirmar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => atualizarStatusAgendamento(agendamento.id, 'cancelado')}
-                        >
-                          Cancelar
-                        </Button>
-                      </>
-                    )}
-                    
-                    {agendamento.status === 'confirmado' && (
-                      <>
-                        <Button 
-                          size="sm" 
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={() => atualizarStatusAgendamento(agendamento.id, 'realizado')}
-                        >
-                          Marcar como Realizado
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => atualizarStatusAgendamento(agendamento.id, 'cancelado')}
-                        >
-                          Cancelar
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
           ))}
         </div>
       )}

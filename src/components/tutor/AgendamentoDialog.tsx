@@ -42,6 +42,7 @@ import {
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DIAS_SEMANA, formatarHora } from '@/types/agenda';
+import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 
 // Esquema de validação
 const formSchema = z.object({
@@ -93,6 +94,7 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
   const [pets, setPets] = useState<Pet[]>([]);
   const [step, setStep] = useState(1); // 1 = Data, 2 = Horário, 3 = Confirmação
   const [erroRLS, setErroRLS] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -329,9 +331,20 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
     setStep(3);
   };
 
+  const handleSubmitRequest = () => {
+    // Verifica se o formulário é válido
+    const isValid = form.trigger();
+    
+    if (isValid) {
+      // Mostra diálogo de confirmação
+      setShowConfirmDialog(true);
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
+      setShowConfirmDialog(false);
       
       // Combinar data e hora
       const dataStr = format(values.data, 'yyyy-MM-dd');
@@ -417,178 +430,188 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Agendamento com {veterinarioNome}</DialogTitle>
-          <DialogDescription>
-            Serviço: {servicoNome} ({duracaoMinutos} min)
-            {erroRLS && (
-              <div className="mt-2 p-2 bg-yellow-100 rounded-md text-xs">
-                Nota: O sistema está operando em modo de demonstração devido a um erro temporário. 
-                Seus agendamentos de teste não serão salvos.
-              </div>
-            )}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {step === 1 && (
-              <div className="space-y-4">
-                <h3 className="font-medium">Selecione uma data</h3>
-                <FormField
-                  control={form.control}
-                  name="data"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <div className="flex justify-center">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={handleDateSelect}
-                          disabled={(date) => 
-                            isBefore(date, addDays(new Date(), -1)) || 
-                            isAfter(date, addDays(new Date(), 30))
-                          }
-                          initialFocus
-                          locale={ptBR}
-                          className="rounded-md border"
-                        />
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {step === 2 && selectedDate && (
-              <div className="space-y-4">
-                <div className="flex flex-col items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    type="button" 
-                    onClick={() => setStep(1)}
-                    className="self-start"
-                  >
-                    ← Voltar
-                  </Button>
-                  <h3 className="font-medium text-center">
-                    {getDiaSemanaString(selectedDate)}, {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                  </h3>
+    <>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Agendamento com {veterinarioNome}</DialogTitle>
+            <DialogDescription>
+              Serviço: {servicoNome} ({duracaoMinutos} min)
+              {erroRLS && (
+                <div className="mt-2 p-2 bg-yellow-100 rounded-md text-xs">
+                  Nota: O sistema está operando em modo de demonstração devido a um erro temporário. 
+                  Seus agendamentos de teste não serão salvos.
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="horario"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Horário disponível</FormLabel>
-                      <div className="grid grid-cols-3 gap-2 mt-2">
-                        {horariosDisponiveis.length > 0 ? (
-                          horariosDisponiveis.map((horario, index) => (
-                            <Button
-                              key={index}
-                              type="button"
-                              variant={field.value === horario.hora ? "default" : "outline"}
-                              disabled={!horario.disponivel || isLoading}
-                              onClick={() => handleTimeSelect(horario.hora)}
-                              className={cn(
-                                "h-10",
-                                !horario.disponivel && "opacity-50 cursor-not-allowed"
-                              )}
-                            >
-                              {horario.hora}
-                            </Button>
-                          ))
-                        ) : (
-                          <div className="col-span-3 text-center py-4 text-gray-500">
-                            {isLoading ? (
-                              <div className="flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#2D113F]"></div>
-                                <span className="ml-2">Carregando horários...</span>
-                              </div>
-                            ) : (
-                              "Não há horários disponíveis nesta data."
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    type="button" 
-                    onClick={() => setStep(2)}
-                  >
-                    ← Voltar
-                  </Button>
-                  <h3 className="font-medium">Confirme seu agendamento</h3>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmitRequest)} className="space-y-4">
+              {step === 1 && (
+                <div className="space-y-4">
+                  <h3 className="font-medium">Selecione uma data</h3>
+                  <FormField
+                    control={form.control}
+                    name="data"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <div className="flex justify-center">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={handleDateSelect}
+                            disabled={(date) => 
+                              isBefore(date, addDays(new Date(), -1)) || 
+                              isAfter(date, addDays(new Date(), 30))
+                            }
+                            initialFocus
+                            locale={ptBR}
+                            className="rounded-md border"
+                          />
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
+              )}
 
-                <div className="bg-gray-50 p-3 rounded-md space-y-2">
-                  <p><span className="font-medium">Veterinário:</span> {veterinarioNome}</p>
-                  <p><span className="font-medium">Serviço:</span> {servicoNome}</p>
-                  <p><span className="font-medium">Data:</span> {selectedDate && format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}</p>
-                  <p><span className="font-medium">Horário:</span> {form.getValues("horario")}</p>
-                  <p><span className="font-medium">Duração:</span> {duracaoMinutos} minutos</p>
-                </div>
+              {step === 2 && selectedDate && (
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      type="button" 
+                      onClick={() => setStep(1)}
+                      className="self-start"
+                    >
+                      ← Voltar
+                    </Button>
+                    <h3 className="font-medium text-center">
+                      {getDiaSemanaString(selectedDate)}, {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    </h3>
+                  </div>
 
-                <FormField
-                  control={form.control}
-                  name="petId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Selecione o Pet</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um pet" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {pets.length > 0 ? (
-                            pets.map((pet) => (
-                              <SelectItem key={pet.id} value={pet.id}>
-                                {pet.nome} ({pet.especie})
-                              </SelectItem>
+                  <FormField
+                    control={form.control}
+                    name="horario"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Horário disponível</FormLabel>
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                          {horariosDisponiveis.length > 0 ? (
+                            horariosDisponiveis.map((horario, index) => (
+                              <Button
+                                key={index}
+                                type="button"
+                                variant={field.value === horario.hora ? "default" : "outline"}
+                                disabled={!horario.disponivel || isLoading}
+                                onClick={() => handleTimeSelect(horario.hora)}
+                                className={cn(
+                                  "h-10",
+                                  !horario.disponivel && "opacity-50 cursor-not-allowed"
+                                )}
+                              >
+                                {horario.hora}
+                              </Button>
                             ))
                           ) : (
-                            <SelectItem value="no-pets" disabled>
-                              Você não tem pets cadastrados
-                            </SelectItem>
+                            <div className="col-span-3 text-center py-4 text-gray-500">
+                              {isLoading ? (
+                                <div className="flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#2D113F]"></div>
+                                  <span className="ml-2">Carregando horários...</span>
+                                </div>
+                              ) : (
+                                "Não há horários disponíveis nesta data."
+                              )}
+                            </div>
                           )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
-                <DialogFooter>
-                  <Button 
-                    type="submit"
-                    className="w-full bg-[#2D113F] hover:bg-[#2D113F]/80"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Processando..." : "Confirmar Agendamento"}
-                  </Button>
-                </DialogFooter>
-              </div>
-            )}
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              {step === 3 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      type="button" 
+                      onClick={() => setStep(2)}
+                    >
+                      ← Voltar
+                    </Button>
+                    <h3 className="font-medium">Confirme seu agendamento</h3>
+                  </div>
+
+                  <div className="bg-gray-50 p-3 rounded-md space-y-2">
+                    <p><span className="font-medium">Veterinário:</span> {veterinarioNome}</p>
+                    <p><span className="font-medium">Serviço:</span> {servicoNome}</p>
+                    <p><span className="font-medium">Data:</span> {selectedDate && format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}</p>
+                    <p><span className="font-medium">Horário:</span> {form.getValues("horario")}</p>
+                    <p><span className="font-medium">Duração:</span> {duracaoMinutos} minutos</p>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="petId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Selecione o Pet</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um pet" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {pets.length > 0 ? (
+                              pets.map((pet) => (
+                                <SelectItem key={pet.id} value={pet.id}>
+                                  {pet.nome} ({pet.especie})
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-pets" disabled>
+                                Você não tem pets cadastrados
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <DialogFooter>
+                    <Button 
+                      type="submit"
+                      className="w-full bg-[#2D113F] hover:bg-[#2D113F]/80"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Processando..." : "Confirmar Agendamento"}
+                    </Button>
+                  </DialogFooter>
+                </div>
+              )}
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <DeleteConfirmationDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={() => form.handleSubmit(onSubmit)()}
+        title="Confirmar Agendamento"
+        description={`Você está prestes a agendar um horário com ${veterinarioNome} para o serviço de ${servicoNome}. Deseja confirmar?`}
+      />
+    </>
   );
 };
 
