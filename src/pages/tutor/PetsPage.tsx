@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -16,7 +17,7 @@ import { Pet, PetSexo } from '@/domain/models/User';
 import PetFormDialog from '@/components/tutor/PetFormDialog';
 import DeleteConfirmationDialog from '@/components/tutor/DeleteConfirmationDialog';
 
-// Mapeamento de códigos para valores legíveis
+// Mapeamento de nomes legíveis para códigos internos
 const petTypeMapping: Record<string, string> = {
   "Cachorro": "dog",
   "Gato": "cat",
@@ -79,7 +80,7 @@ const PetsPage = () => {
       
       // Converter os dados recebidos do Supabase para o formato esperado por Pet
       const formattedPets: Pet[] = data?.map(pet => {
-        // Identificar o tipo do pet com base no mapeamento inverso
+        // Identificar o tipo do pet com base no mapeamento 
         const petType = petTypeMapping[pet.especie] || "other";
         
         return {
