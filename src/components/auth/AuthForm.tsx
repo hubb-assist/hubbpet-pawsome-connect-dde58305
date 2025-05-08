@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -162,22 +163,6 @@ export default function AuthForm() {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setIsSubmitting(true);
-    setError(null);
-    
-    try {
-      console.log("Tentando fazer login com conta de demonstração");
-      await signIn("luis@admin.hubbpet.com", "adminhubb2023");
-      console.log("Login com conta de demonstração bem-sucedido");
-    } catch (error: any) {
-      console.error("Erro no login com conta de demonstração:", error);
-      setError("Erro ao fazer login com conta de demonstração. Por favor, tente novamente.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <Card className="w-full max-w-md mx-auto border-[#2D113F]/20">
       <CardHeader>
@@ -281,15 +266,15 @@ export default function AuthForm() {
                       <span className="px-2 bg-white text-gray-500">ou</span>
                     </div>
                   </div>
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleDemoLogin}
-                    disabled={isSubmitting}
-                  >
-                    Entrar com conta de demonstração
-                  </Button>
+                  <Link to="/">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Voltar
+                    </Button>
+                  </Link>
                 </div>
               </form>
             </Form>
@@ -370,3 +355,4 @@ export default function AuthForm() {
     </Card>
   );
 }
+
