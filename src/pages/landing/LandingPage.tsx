@@ -18,7 +18,7 @@ const LandingPage = () => {
               </h1>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/auth">
-                  <Button size="lg" className="bg-hubbpet-auxiliary hover:bg-hubbpet-auxiliary/80 font-['Poppins'] uppercase bg-gray-900 hover:bg-gray-800 bg-[E72A4A] text-white">
+                  <Button size="lg" className="bg-hubbpet-auxiliary hover:bg-hubbpet-auxiliary/80 font-['Poppins'] uppercase bg-[E72A4A] text-pink-700 bg-white font-semibold">
                     Encontre um veterinário
                   </Button>
                 </Link>
