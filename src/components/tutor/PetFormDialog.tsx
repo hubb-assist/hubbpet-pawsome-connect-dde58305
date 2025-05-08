@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -117,16 +116,21 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
     
     setIsLoading(true);
     try {
-      // 🔍 Buscar o ID real do tutor (tutores.id), com base no user.id (que é user_id)
+      // Primeiro, buscar o ID real do tutor da tabela 'tutores'
       const { data: tutor, error: tutorError } = await supabase
         .from('tutores')
         .select('id')
         .eq('user_id', user.id)
         .single();
       
-      if (tutorError || !tutor?.id) {
+      if (tutorError || !tutor) {
         console.error("Erro ao buscar perfil do tutor:", tutorError);
-        throw new Error('Tutor não encontrado na tabela tutores.');
+        toast({
+          title: "Erro de perfil",
+          description: "Seu perfil de tutor não está configurado corretamente. Por favor, tente fazer logout e login novamente.",
+          variant: "destructive"
+        });
+        return;
       }
       
       const petData = {
@@ -136,7 +140,7 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
         data_nascimento: data.birthdate ? data.birthdate : null,
         sexo: data.sexo || null,
         peso: data.peso || null,
-        tutor_id: tutor.id, // 👈 Usar o ID real da tabela tutores, não o auth.users
+        tutor_id: tutor.id, // Usar o ID da tabela tutores, não o auth.users
         updated_at: new Date().toISOString(),
       };
       
