@@ -549,7 +549,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_users: {
+        Row: {
+          user_id: string | null
+        }
+        Insert: {
+          user_id?: string | null
+        }
+        Update: {
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_all_users: {

@@ -4,56 +4,24 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-interface Servico {
-  id: string;
-  nome: string;
-}
-
 const ConfiguracoesComissaoPage = () => {
-  const [servicos, setServicos] = useState<Servico[]>([]);
-  const [servicoSelecionado, setServicoSelecionado] = useState<string | null>(null);
-  const [comissao, setComissao] = useState<string | null>(null);
+  const [comissao, setComissao] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Buscar serviços do banco de dados
-  useEffect(() => {
-    const fetchServicos = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('servicos')
-          .select('id, nome');
-
-        if (error) throw error;
-
-        if (data) {
-          setServicos(data);
-        }
-      } catch (error: any) {
-        toast({
-          title: "Erro ao carregar serviços",
-          description: error.message || "Não foi possível carregar a lista de serviços.",
-          variant: "destructive"
-        });
-      }
-    };
-
-    fetchServicos();
-  }, [toast]);
-
-  // Buscar comissões existentes
-  const { data: comissoes, isLoading: isComissoesLoading } = useQuery({
-    queryKey: ['comissoes'],
+  // Buscar configuração de comissão global
+  const { data: configComissao, isLoading } = useQuery({
+    queryKey: ['config-comissao'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('comissoes_servicos')
-        .select('servico_id, percentual');
+        .from('admin_configuracoes')
+        .select('comissao_padrao')
+        .single();
 
       if (error) throw error;
       return data;
@@ -61,52 +29,46 @@ const ConfiguracoesComissaoPage = () => {
     meta: {
       onError: (error: any) => {
         toast({
-          title: "Erro ao carregar comissões",
-          description: error.message || "Não foi possível carregar as configurações de comissão.",
+          title: "Erro ao carregar configurações",
+          description: error.message || "Não foi possível carregar a configuração de comissão.",
           variant: "destructive"
         });
       }
     }
   });
 
-  // Atualizar o valor da comissão quando o serviço é selecionado
+  // Atualizar o estado da comissão quando os dados forem carregados
   useEffect(() => {
-    if (servicoSelecionado && comissoes) {
-      const comissaoDoServico = comissoes.find(c => c.servico_id === servicoSelecionado);
-      if (comissaoDoServico) {
-        setComissao(comissaoDoServico.percentual ? comissaoDoServico.percentual.toString() : '');
-      } else {
-        setComissao('');
-      }
+    if (configComissao) {
+      setComissao(configComissao.comissao_padrao.toString());
     }
-  }, [servicoSelecionado, comissoes]);
+  }, [configComissao]);
 
   const handleSalvar = async () => {
     if (!comissao) return;
 
     try {
       setIsSubmitting(true);
-
+      
       // Converter para número antes de enviar
-      const comissaoNumerica = parseFloat(comissao.toString());
+      const comissaoNumerica = parseFloat(comissao);
       
       const { error } = await supabase
-        .from('comissoes_servicos')
-        .upsert({
-          servico_id: servicoSelecionado,
-          percentual: comissaoNumerica,
+        .from('admin_configuracoes')
+        .update({
+          comissao_padrao: comissaoNumerica,
           atualizado_em: new Date().toISOString()
-        }, { onConflict: 'servico_id' });
+        });
 
       if (error) throw error;
 
       toast({
-        title: "Comissão atualizada",
-        description: "A configuração de comissão foi salva com sucesso."
+        title: "Comissão global atualizada",
+        description: "A configuração de comissão global foi salva com sucesso."
       });
 
       // Recarregar dados
-      queryClient.invalidateQueries({ queryKey: ['comissoes'] });
+      queryClient.invalidateQueries({ queryKey: ['config-comissao'] });
       
     } catch (error: any) {
       toast({
@@ -121,46 +83,44 @@ const ConfiguracoesComissaoPage = () => {
 
   return (
     <div className="container py-8">
-      <h1 className="text-2xl font-bold mb-4">Configurações de Comissão</h1>
+      <h1 className="text-2xl font-bold mb-6">Configurações de Comissão</h1>
+      
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <p className="text-gray-600 mb-4">
+          Configure o percentual de comissão global que será aplicado a todos os serviços realizados na plataforma.
+        </p>
 
-      <div className="grid gap-4">
-        <div>
-          <Label htmlFor="servico">Serviço</Label>
-          <Select onValueChange={(value) => setServicoSelecionado(value)} value={servicoSelecionado || ''}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Selecione um serviço" />
-            </SelectTrigger>
-            <SelectContent>
-              {servicos.map((servico) => (
-                <SelectItem key={servico.id} value={servico.id}>
-                  {servico.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="max-w-md">
+          <div className="mb-6">
+            <Label htmlFor="comissao" className="text-base">Comissão Global (%)</Label>
+            <Input
+              type="number"
+              id="comissao"
+              placeholder="Digite a porcentagem"
+              value={comissao}
+              onChange={(e) => setComissao(e.target.value)}
+              className="mt-2"
+            />
+            <p className="text-sm text-gray-500 mt-2">
+              Este valor será aplicado como comissão para todos os serviços da plataforma.
+            </p>
+          </div>
+
+          <Button 
+            onClick={handleSalvar} 
+            disabled={isSubmitting || isLoading}
+            className="w-full md:w-auto"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              "Salvar Configuração"
+            )}
+          </Button>
         </div>
-
-        <div>
-          <Label htmlFor="comissao">Comissão (%)</Label>
-          <Input
-            type="number"
-            id="comissao"
-            placeholder="Digite a porcentagem"
-            value={comissao || ''}
-            onChange={(e) => setComissao(e.target.value)}
-          />
-        </div>
-
-        <Button onClick={handleSalvar} disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            "Salvar Configuração"
-          )}
-        </Button>
       </div>
     </div>
   );
