@@ -137,7 +137,7 @@ const LandingPage = () => {
               </ul>
             </div>
             <div className="md:w-1/2">
-              <img src="https://images.unsplash.com/photo-1628009368231-7bb7cfcbf266?auto=format&fit=crop&q=80" alt="Veterinário examinando um cachorro" className="rounded-lg w-full shadow-lg" />
+              <img alt="Veterinário examinando um cachorro" className="rounded-lg w-full shadow-lg" src="/lovable-uploads/41b8159e-27bf-4b1b-b1a3-6547059a1a03.png" />
             </div>
           </div>
         </div>
