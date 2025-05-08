@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -96,7 +95,7 @@ const App = () => {
             path="/vet/*"
             element={
               <ProtectedRoute userRole="veterinario">
-                <AppLayout userRole="veterinary">
+                <AppLayout userRole="veterinario">
                   <Routes>
                     <Route path="/" element={<VeterinarioDashboard />} />
                     <Route path="/agenda" element={<AgendaPage />} />
