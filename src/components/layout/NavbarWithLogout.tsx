@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const NavbarWithLogout: React.FC = () => {
+interface NavbarProps {
+  // Se no futuro precisar passar toggleSidebar novamente, adicionar aqui
+}
+
+const NavbarWithLogout: React.FC<NavbarProps> = () => {
   const { user, signOut, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -57,7 +62,7 @@ const NavbarWithLogout: React.FC = () => {
   return (
     <div className="flex justify-between items-center p-4 bg-[#E72A4A] text-white">
       <div className="flex items-center">
-        {/* Removendo a imagem do logo para evitar duplicação */}
+        {/* Área para título da página ou outras informações */}
       </div>
       
       <DropdownMenu>
