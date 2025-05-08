@@ -14,6 +14,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { 
   Select, 
   SelectContent, 
   SelectItem, 
@@ -23,6 +31,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Pet } from '@/domain/models/User';
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 interface PetFormDialogProps {
   open: boolean;
@@ -31,12 +41,17 @@ interface PetFormDialogProps {
   onSaved: () => void;
 }
 
-interface PetFormValues {
-  name: string;
-  type: 'dog' | 'cat' | 'bird' | 'reptile' | 'other';
-  breed: string;
-  birthdate?: string;
-}
+// Schema para validação dos dados do pet
+const petSchema = z.object({
+  name: z.string().min(1, { message: "Nome do pet é obrigatório" }),
+  type: z.enum(["dog", "cat", "bird", "reptile", "other"], {
+    required_error: "Selecione o tipo do pet",
+  }),
+  breed: z.string().optional(),
+  birthdate: z.string().optional(),
+});
+
+type PetFormValues = z.infer<typeof petSchema>;
 
 const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps) => {
   const { user } = useAuth();
@@ -44,7 +59,8 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
   
   const isEditing = !!pet;
   
-  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<PetFormValues>({
+  const form = useForm<PetFormValues>({
+    resolver: zodResolver(petSchema),
     defaultValues: pet ? {
       name: pet.name,
       type: pet.type,
@@ -61,12 +77,14 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
   React.useEffect(() => {
     if (open) {
       if (pet) {
-        setValue('name', pet.name);
-        setValue('type', pet.type);
-        setValue('breed', pet.breed || '');
-        setValue('birthdate', pet.birthdate ? new Date(pet.birthdate).toISOString().split('T')[0] : undefined);
+        form.reset({
+          name: pet.name,
+          type: pet.type,
+          breed: pet.breed || '',
+          birthdate: pet.birthdate ? new Date(pet.birthdate).toISOString().split('T')[0] : undefined,
+        });
       } else {
-        reset({
+        form.reset({
           name: '',
           type: 'dog',
           breed: '',
@@ -74,7 +92,7 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
         });
       }
     }
-  }, [open, pet, setValue, reset]);
+  }, [open, pet, form]);
   
   const onSubmit = async (data: PetFormValues) => {
     if (!user) return;
@@ -89,6 +107,8 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
         tutor_id: user.id,
         updated_at: new Date().toISOString(),
       };
+      
+      console.log("Enviando dados do pet:", petData);
       
       let response;
       
@@ -105,7 +125,10 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
       
       const { error } = response;
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro na requisição Supabase:", error);
+        throw error;
+      }
       
       toast({
         title: isEditing ? "Pet atualizado" : "Pet adicionado",
@@ -115,17 +138,16 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
       onOpenChange(false);
       onSaved();
     } catch (error: any) {
+      console.error("Erro completo:", error);
       toast({
         title: "Erro",
-        description: error.message,
+        description: error.message || "Ocorreu um erro ao salvar o pet.",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
-  
-  const petType = watch('type');
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -141,63 +163,97 @@ const PetFormDialog = ({ open, onOpenChange, pet, onSaved }: PetFormDialogProps)
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome do Pet *</Label>
-            <Input 
-              id="name" 
-              {...register("name", { required: "Nome é obrigatório" })}
-              placeholder="Nome do pet" 
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome do Pet *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Nome do pet" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="type">Espécie *</Label>
-            <Select 
-              defaultValue={petType} 
-              onValueChange={(value) => setValue('type', value as any)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo de animal" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dog">Cachorro</SelectItem>
-                <SelectItem value="cat">Gato</SelectItem>
-                <SelectItem value="bird">Pássaro</SelectItem>
-                <SelectItem value="reptile">Réptil</SelectItem>
-                <SelectItem value="other">Outro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="breed">Raça</Label>
-            <Input 
-              id="breed" 
-              {...register("breed")}
-              placeholder="Raça do pet" 
+            
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Espécie *</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo de animal" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="dog">Cachorro</SelectItem>
+                      <SelectItem value="cat">Gato</SelectItem>
+                      <SelectItem value="bird">Pássaro</SelectItem>
+                      <SelectItem value="reptile">Réptil</SelectItem>
+                      <SelectItem value="other">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="birthdate">Data de Nascimento</Label>
-            <Input 
-              id="birthdate" 
-              type="date" 
-              {...register("birthdate")}
+            
+            <FormField
+              control={form.control}
+              name="breed"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Raça</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Raça do pet" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Salvando..." : isEditing ? "Atualizar" : "Adicionar"}
-            </Button>
-          </DialogFooter>
-        </form>
+            
+            <FormField
+              control={form.control}
+              name="birthdate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data de Nascimento</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Salvando..." : isEditing ? "Atualizar" : "Adicionar"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

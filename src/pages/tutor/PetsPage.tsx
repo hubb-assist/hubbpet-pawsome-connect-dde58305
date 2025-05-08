@@ -10,7 +10,7 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, pencil, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Pet } from '@/domain/models/User';
@@ -37,22 +37,25 @@ const PetsPage = () => {
     
     setIsLoading(true);
     try {
+      console.log("Buscando pets para o usuário:", user.id);
       const { data, error } = await supabase
         .from('pets')
         .select('*')
         .eq('tutor_id', user.id)
         .order('nome', { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar pets:", error);
+        throw error;
+      }
+      
+      console.log("Pets recebidos:", data);
       
       // Converter os dados recebidos do Supabase para o formato esperado por Pet
       const formattedPets: Pet[] = data?.map(pet => ({
         id: pet.id,
         name: pet.nome,
-        type: pet.especie === 'cachorro' ? 'dog' : 
-              pet.especie === 'gato' ? 'cat' :
-              pet.especie === 'passaro' ? 'bird' :
-              pet.especie === 'reptil' ? 'reptile' : 'other',
+        type: pet.especie,
         breed: pet.raca || '',
         birthdate: pet.data_nascimento ? new Date(pet.data_nascimento) : undefined,
         tutorId: pet.tutor_id,
@@ -87,6 +90,7 @@ const PetsPage = () => {
     if (!currentPet) return;
     
     try {
+      console.log("Removendo pet:", currentPet.id);
       const { error } = await supabase
         .from('pets')
         .delete()
@@ -100,6 +104,7 @@ const PetsPage = () => {
         description: `${currentPet.name} foi removido com sucesso.`,
       });
     } catch (error: any) {
+      console.error("Erro ao remover pet:", error);
       toast({
         title: "Erro ao remover pet",
         description: error.message,
@@ -154,7 +159,7 @@ const PetsPage = () => {
               </CardContent>
               <CardFooter className="flex justify-end space-x-2">
                 <Button variant="outline" size="sm" onClick={() => handleEditPet(pet)}>
-                  <Edit className="h-4 w-4 mr-1" /> Editar
+                  <pencil className="h-4 w-4 mr-1" /> Editar
                 </Button>
                 <Button variant="destructive" size="sm" onClick={() => handleDeletePet(pet)}>
                   <Trash2 className="h-4 w-4 mr-1" /> Remover
