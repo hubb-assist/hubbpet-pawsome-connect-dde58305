@@ -610,6 +610,7 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
         onConfirm={() => form.handleSubmit(onSubmit)()}
         title="Confirmar Agendamento"
         description={`Você está prestes a agendar um horário com ${veterinarioNome} para o serviço de ${servicoNome}. Deseja confirmar?`}
+        confirmText="Sim, agendar"
       />
     </>
   );

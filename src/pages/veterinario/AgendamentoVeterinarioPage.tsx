@@ -9,6 +9,7 @@ import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { playNotificationSound } from '@/assets/notification-sound';
+import DeleteConfirmationDialog from '@/components/tutor/DeleteConfirmationDialog';
 
 // Tipagem para os agendamentos
 type Agendamento = {
@@ -37,6 +38,9 @@ const AgendamentoVeterinarioPage = () => {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [enableSound, setEnableSound] = useState(true);
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [statusSelecionado, setStatusSelecionado] = useState<'confirmado' | 'cancelado'>('confirmado');
   const lastAgendamentoCountRef = useRef<number | null>(null);
   const realTimeSubscription = useRef<any>(null);
   
@@ -82,6 +86,27 @@ const AgendamentoVeterinarioPage = () => {
     try {
       setIsLoading(true);
       
+      // Primeiro busca o ID do veterinário usando o user_id
+      const { data: veterinarioData, error: veterinarioError } = await supabase
+        .from('veterinarios')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (veterinarioError) {
+        console.error('Erro ao buscar ID do veterinário:', veterinarioError);
+        throw veterinarioError;
+      }
+      
+      const veterinarioId = veterinarioData?.id;
+      
+      if (!veterinarioId) {
+        console.error('ID do veterinário não encontrado');
+        throw new Error('ID do veterinário não encontrado');
+      }
+      
+      console.log('ID do veterinário encontrado:', veterinarioId);
+      
       const { data, error } = await supabase
         .from('agendamentos')
         .select(`
@@ -104,20 +129,29 @@ const AgendamentoVeterinarioPage = () => {
             raca
           )
         `)
-        .eq('veterinario_id', user.id)
+        .eq('veterinario_id', veterinarioId)
         .order('data_hora', { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na consulta de agendamentos:', error);
+        throw error;
+      }
+      
+      console.log('Agendamentos carregados:', data);
       
       // Verificar se há novos agendamentos para notificar
       if (lastAgendamentoCountRef.current !== null && 
-          data.length > lastAgendamentoCountRef.current && 
+          data && data.length > lastAgendamentoCountRef.current && 
           enableSound) {
         playNotificationSound();
       }
       
-      lastAgendamentoCountRef.current = data.length;
-      setAgendamentos(data || []);
+      if (data) {
+        lastAgendamentoCountRef.current = data.length;
+        setAgendamentos(data);
+      } else {
+        setAgendamentos([]);
+      }
     } catch (error: any) {
       console.error('Erro ao carregar agendamentos:', error.message);
       toast("Erro ao carregar agendamentos", {
@@ -170,6 +204,20 @@ const AgendamentoVeterinarioPage = () => {
     return format(data, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   };
 
+  const handleSelectAgendamento = (id: string, status: 'confirmado' | 'cancelado') => {
+    setAgendamentoSelecionado(id);
+    setStatusSelecionado(status);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmStatus = () => {
+    if (agendamentoSelecionado) {
+      atualizarStatusAgendamento(agendamentoSelecionado, statusSelecionado);
+      setShowDeleteDialog(false);
+      setAgendamentoSelecionado(null);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -217,14 +265,14 @@ const AgendamentoVeterinarioPage = () => {
                   <Button 
                     variant="outline" 
                     className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                    onClick={() => atualizarStatusAgendamento(agendamento.id, 'confirmado')}
+                    onClick={() => handleSelectAgendamento(agendamento.id, 'confirmado')}
                   >
                     Confirmar
                   </Button>
                   <Button 
                     variant="outline" 
                     className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                    onClick={() => atualizarStatusAgendamento(agendamento.id, 'cancelado')}
+                    onClick={() => handleSelectAgendamento(agendamento.id, 'cancelado')}
                   >
                     Rejeitar
                   </Button>
@@ -234,6 +282,17 @@ const AgendamentoVeterinarioPage = () => {
           ))}
         </div>
       )}
+      
+      <DeleteConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleConfirmStatus}
+        title={statusSelecionado === 'confirmado' ? "Confirmar Agendamento" : "Rejeitar Agendamento"}
+        description={statusSelecionado === 'confirmado' 
+          ? "Tem certeza que deseja confirmar este agendamento?" 
+          : "Tem certeza que deseja rejeitar este agendamento?"}
+        confirmText={statusSelecionado === 'confirmado' ? "Sim, confirmar" : "Sim, rejeitar"}
+      />
     </div>
   );
 };

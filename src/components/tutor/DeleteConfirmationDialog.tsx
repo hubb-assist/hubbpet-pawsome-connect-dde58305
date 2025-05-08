@@ -17,6 +17,8 @@ interface DeleteConfirmationDialogProps {
   onConfirm: () => void;
   title: string;
   description: string;
+  confirmText?: string;
+  cancelText?: string;
 }
 
 const DeleteConfirmationDialog = ({
@@ -25,6 +27,8 @@ const DeleteConfirmationDialog = ({
   onConfirm,
   title,
   description,
+  confirmText = "Sim, remover",
+  cancelText = "Cancelar",
 }: DeleteConfirmationDialogProps) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -36,9 +40,9 @@ const DeleteConfirmationDialog = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} className="bg-red-600 hover:bg-red-700">
-            Sim, remover
+            {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
