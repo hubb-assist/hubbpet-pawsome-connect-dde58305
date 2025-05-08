@@ -11,7 +11,7 @@ const LandingPage = () => {
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="md:w-1/2 mb-8 md:mb-0">
               <div className="logo-container mb-6">
-                <img src="https://sq360.com.br/logo-hubb-novo/hubb_pet_logo.png" alt="HubbPet" />
+                <img alt="HubbPet" src="/lovable-uploads/e1a982df-207b-4703-b56e-97b3f1eda992.png" className="object-contain" />
               </div>
               <h1 className="text-4xl font-bold mb-6 font-['Poppins'] md:text-4xl my-[32px] py-[16px] px-[3px] mx-0">
                 CONECTANDO TUTORES E VETERINÁRIOS EM POUCOS CLIQUES
@@ -32,7 +32,7 @@ const LandingPage = () => {
             <div className="md:w-1/2 flex justify-center relative">
               <img alt="Cachorro fofo" style={{
               height: '350px'
-            }} className="rounded-lg w-full max-w-md shadow-lg z-10 object-contain" src="/lovable-uploads/7243cf0c-a49d-4ab5-9bd8-a80e9fdde964.png" />
+            }} src="/lovable-uploads/7243cf0c-a49d-4ab5-9bd8-a80e9fdde964.png" className="rounded-lg w-full max-w-md shadow-lg z-10 object-contain" />
               {/* Elementos decorativos */}
               <div className="absolute -top-6 -left-6 w-12 h-12 rounded-full bg-hubbpet-secondary opacity-50"></div>
               <div className="absolute top-1/4 -right-6 w-8 h-8 rounded-full bg-hubbpet-auxiliary opacity-50"></div>
