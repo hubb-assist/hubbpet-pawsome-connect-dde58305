@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -118,14 +119,42 @@ const AgendamentoDialog: React.FC<AgendamentoDialogProps> = ({
       setErroRLS(false);
       
       console.log("Buscando pets do tutor:", user?.id);
+      
+      // Passo 1: Buscar o ID real do tutor na tabela tutores com base no user_id
+      const { data: tutor, error: tutorError } = await supabase
+        .from('tutores')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (tutorError) {
+        console.error('Erro ao buscar ID do tutor:', tutorError);
+        setErroRLS(true);
+        setPets([
+          { id: 'demo-pet-1', nome: 'Pet Demo 1', especie: 'Cachorro' },
+          { id: 'demo-pet-2', nome: 'Pet Demo 2', especie: 'Gato' }
+        ]);
+        return;
+      }
+      
+      if (!tutor?.id) {
+        console.error('ID do tutor não encontrado');
+        setErroRLS(true);
+        setPets([
+          { id: 'demo-pet-1', nome: 'Pet Demo 1', especie: 'Cachorro' },
+          { id: 'demo-pet-2', nome: 'Pet Demo 2', especie: 'Gato' }
+        ]);
+        return;
+      }
+      
+      // Passo 2: Buscar os pets usando o ID real do tutor
       const { data, error } = await supabase
         .from('pets')
         .select('id, nome, especie')
-        .eq('tutor_id', user?.id);
+        .eq('tutor_id', tutor.id);
       
       if (error) {
         console.error('Erro ao buscar pets:', error);
-        // Modo demonstração para contornar erros de RLS
         setErroRLS(true);
         setPets([
           { id: 'demo-pet-1', nome: 'Pet Demo 1', especie: 'Cachorro' },
